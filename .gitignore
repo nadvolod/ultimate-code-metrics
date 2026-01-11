@@ -1,0 +1,37 @@
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Node.js (for future ui/)
+ui/node_modules/
+ui/.next/
+ui/out/
+ui/dist/
+ui/.env*.local
+
+# Test outputs
+test-input.json
+test-output.json
+sample-output.json
+*.json.bak
+
+# Temporal
+.temporal/
+
+# Claude
+.claude/
