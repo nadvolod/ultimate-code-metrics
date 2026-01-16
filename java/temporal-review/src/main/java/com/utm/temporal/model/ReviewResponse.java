@@ -10,6 +10,11 @@ public class ReviewResponse {
     public List<AgentResult> agents;
     public Metadata metadata;
 
+    // PR metadata (echoed from request)
+    public Integer prNumber;
+    public String prTitle;
+    public String author;
+
     // No-arg constructor required for Jackson deserialization
     public ReviewResponse() {}
 
@@ -17,5 +22,15 @@ public class ReviewResponse {
         this.overallRecommendation = overallRecommendation;
         this.agents = agents;
         this.metadata = metadata;
+    }
+
+    public ReviewResponse(String overallRecommendation, List<AgentResult> agents, Metadata metadata,
+                          Integer prNumber, String prTitle, String author) {
+        this.overallRecommendation = overallRecommendation;
+        this.agents = agents;
+        this.metadata = metadata;
+        this.prNumber = prNumber;
+        this.prTitle = prTitle;
+        this.author = author;
     }
 }

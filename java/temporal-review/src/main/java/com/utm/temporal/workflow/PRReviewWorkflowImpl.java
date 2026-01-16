@@ -84,7 +84,10 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             ReviewResponse response = new ReviewResponse(
                     overall,
                     Arrays.asList(codeQuality, testQuality, security),
-                    metadata
+                    metadata,
+                    request.prNumber,
+                    request.prTitle,
+                    request.author
             );
 
             System.out.println("=".repeat(60));
