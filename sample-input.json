@@ -1,0 +1,13 @@
+{
+  "prNumber": 42,
+  "prTitle": "Add user authentication feature",
+  "author": "sarah.dev",
+  "prDescription": "This PR implements JWT-based authentication for user login and registration. Includes middleware for protected routes and token refresh functionality.",
+  "diff": "diff --git a/src/auth/auth.service.js b/src/auth/auth.service.js\nnew file mode 100644\nindex 0000000..abc1234\n--- /dev/null\n+++ b/src/auth/auth.service.js\n@@ -0,0 +1,25 @@\n+const jwt = require('jsonwebtoken');\n+\n+class AuthService {\n+  login(user) {\n+    if (!user || !user.email) {\n+      throw new Error('Invalid user');\n+    }\n+    const token = jwt.sign(\n+      { email: user.email, id: user.id },\n+      process.env.JWT_SECRET,\n+      { expiresIn: '24h' }\n+    );\n+    return token;\n+  }\n+\n+  verifyToken(token) {\n+    try {\n+      return jwt.verify(token, process.env.JWT_SECRET);\n+    } catch (error) {\n+      throw new Error('Invalid token');\n+    }\n+  }\n+}\n+\n+module.exports = AuthService;",
+  "testSummary": {
+    "passed": true,
+    "totalTests": 43,
+    "failedTests": 0,
+    "durationMs": 1500
+  }
+}
