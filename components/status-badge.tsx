@@ -18,6 +18,7 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
     lg: 16,
   }
 
+  // Fallback config for unexpected status values (defensive coding)
   const defaultBadgeConfig = {
     label: "Unknown",
     icon: Circle,
