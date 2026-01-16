@@ -1,0 +1,31 @@
+{
+  "prNumber": 2,
+  "prTitle": "feat: update landing page to focus on code quality",
+  "author": "nadvolod",
+  "overallRecommendation": "APPROVE",
+  "agents": [
+    {
+      "agentName": "CodeQuality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["Clean component structure", "Good use of Tailwind CSS", "Responsive design implemented"]
+    },
+    {
+      "agentName": "TestQuality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["UI components well-isolated for testing", "No critical test coverage gaps"]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["No security concerns in static landing page"]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-16T12:15:00Z",
+    "tookMs": 1800,
+    "model": "gpt-4"
+  }
+}

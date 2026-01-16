@@ -1,0 +1,31 @@
+{
+  "prNumber": 1,
+  "prTitle": "feat: connect frontend to backend review API",
+  "author": "nadvolod",
+  "overallRecommendation": "APPROVE",
+  "agents": [
+    {
+      "agentName": "CodeQuality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["Well-structured API route", "Good error handling", "Clean separation of concerns"]
+    },
+    {
+      "agentName": "TestQuality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "APPROVE",
+      "findings": ["No tests added for new API endpoint", "Consider adding integration tests"]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["No security issues found", "API endpoint properly validates input"]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-16T12:00:00Z",
+    "tookMs": 2500,
+    "model": "gpt-4"
+  }
+}

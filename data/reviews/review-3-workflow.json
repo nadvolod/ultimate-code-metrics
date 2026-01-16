@@ -1,0 +1,31 @@
+{
+  "prNumber": 3,
+  "prTitle": "working base case workflow",
+  "author": "nadvolod",
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "CodeQuality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": ["Workflow logic needs refactoring", "Magic numbers should be extracted to constants", "Missing documentation for complex logic"]
+    },
+    {
+      "agentName": "TestQuality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": ["No unit tests for workflow", "Critical path lacks test coverage", "Add integration tests before merging"]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["No security vulnerabilities detected"]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-16T12:30:00Z",
+    "tookMs": 3200,
+    "model": "gpt-4"
+  }
+}
