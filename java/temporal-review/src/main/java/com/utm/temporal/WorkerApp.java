@@ -2,7 +2,9 @@ package com.utm.temporal;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.temporal.activity.CodeQualityActivityImpl;
@@ -89,7 +91,9 @@ public class WorkerApp {
 
             // Create workflow stub and execute
             System.out.println("Starting workflow execution...");
-            String workflowId = TASK_QUEUE + "-" + UUID.randomUUID();
+            String timestamp = ZonedDateTime.now(ZoneId.of("America/New_York"))
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
+            String workflowId = TASK_QUEUE + "-" + timestamp;
             PRReviewWorkflow workflow = client.newWorkflowStub(
                     PRReviewWorkflow.class,
                     WorkflowOptions.newBuilder()
