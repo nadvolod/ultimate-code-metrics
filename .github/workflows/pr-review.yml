@@ -13,24 +13,20 @@ jobs:
 
       - name: Start Temporal
         run: |
-          docker run -d --name temporal \
-            -p 7233:7233 \
-            -e DB=sqlite \
-            -e DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml \
-            temporalio/auto-setup:latest
+          # Use temporalite for a self-contained Temporal server with embedded storage
+          curl -sSf https://temporal.download/cli.sh | sh
+          ~/.temporalio/bin/temporal server start-dev --headless &
 
           echo "Waiting for Temporal to be ready..."
-          for i in {1..60}; do
-            if docker exec temporal tctl cluster health 2>/dev/null | grep -q SERVING; then
+          for i in {1..30}; do
+            if ~/.temporalio/bin/temporal operator cluster health 2>/dev/null | grep -q SERVING; then
               echo "Temporal is ready!"
               exit 0
             fi
             echo "Attempt $i: Temporal not ready yet, waiting..."
-            sleep 5
+            sleep 3
           done
 
-          echo "Temporal logs:"
-          docker logs temporal
           echo "Temporal failed to start"
           exit 1
 
