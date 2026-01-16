@@ -11,6 +11,12 @@ jobs:
         image: temporalio/auto-setup:latest
         ports:
           - 7233:7233
+        options: >-
+          --health-cmd "tctl --address temporal:7233 cluster health || nc -z localhost 7233"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +32,20 @@ jobs:
       - name: Build Java module
         run: mvn -pl temporal-review compile -q
         working-directory: java
+
+      - name: Wait for Temporal
+        run: |
+          echo "Waiting for Temporal to be ready..."
+          for i in {1..30}; do
+            if nc -z localhost 7233 2>/dev/null; then
+              echo "Temporal is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Temporal not ready yet, waiting..."
+            sleep 2
+          done
+          echo "Temporal failed to start"
+          exit 1
 
       - name: Generate review input
         run: |
