@@ -7,8 +7,8 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Ultimate Code Metrics - AI-Powered GitHub Testing Intelligence",
-  description: "Automated test quality analysis and PR approval recommendations powered by AI",
+  title: "Ultimate Code Metrics - AI-Powered GitHub Code Quality Intelligence",
+  description: "Automated code quality analysis and PR approval recommendations powered by AI",
   generator: "v0.app",
   icons: {
     icon: [

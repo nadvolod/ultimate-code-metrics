@@ -111,7 +111,7 @@ export const recentReports: TestReport[] = [
         message: "Excellent coverage for new authentication logic (92%)",
       },
       {
-        category: "Test Quality",
+        category: "Code Quality",
         severity: "low",
         message: "Well-structured unit tests with good edge case handling",
       },
@@ -143,7 +143,7 @@ export const recentReports: TestReport[] = [
         message: "High-risk code changes to payment processing without sufficient tests",
       },
       {
-        category: "Test Quality",
+        category: "Code Quality",
         severity: "medium",
         message: "Existing tests do not cover new error handling paths",
       },

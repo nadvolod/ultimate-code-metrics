@@ -1,6 +1,6 @@
 # Ultimate Test Metrics
 
-AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across three dimensions: code quality, test quality, and security.
+AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across three dimensions: code quality, security, and test coverage.
 
 ## Overview
 
@@ -12,7 +12,7 @@ The system follows the Temporal workflow pattern:
 
 - **Workflow** (`PRReviewWorkflow`): Orchestrates three specialized agents sequentially
 - **Activities**: Thin wrappers around agents, registered with Temporal workers
-- **Agents**: Business logic for code quality, test quality, and security analysis
+- **Agents**: Business logic for code quality, test coverage, and security analysis
 - **LLM Client**: Abstraction for AI model calls (currently OpenAI)
 
 ### Data Flow
