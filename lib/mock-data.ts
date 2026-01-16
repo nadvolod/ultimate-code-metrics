@@ -145,7 +145,7 @@ export const recentReports: TestReport[] = [
       {
         category: "Code Quality",
         severity: "medium",
-        message: "Existing tests do not cover new error handling paths",
+        message: "New error handling paths need additional test coverage",
       },
     ],
   },
