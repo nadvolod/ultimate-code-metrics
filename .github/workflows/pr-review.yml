@@ -6,15 +6,33 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
-    services:
-      temporal:
-        image: temporalio/auto-setup:latest
-        ports:
-          - 7233:7233
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Need full history for diff
+
+      - name: Start Temporal
+        run: |
+          docker run -d --name temporal \
+            -p 7233:7233 \
+            -e DB=sqlite \
+            -e DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml \
+            temporalio/auto-setup:latest
+
+          echo "Waiting for Temporal to be ready..."
+          for i in {1..60}; do
+            if docker exec temporal tctl cluster health 2>/dev/null | grep -q SERVING; then
+              echo "Temporal is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Temporal not ready yet, waiting..."
+            sleep 5
+          done
+
+          echo "Temporal logs:"
+          docker logs temporal
+          echo "Temporal failed to start"
+          exit 1
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -26,24 +44,6 @@ jobs:
       - name: Build Java module
         run: mvn -pl temporal-review compile -q
         working-directory: java
-
-      - name: Wait for Temporal
-        run: |
-          echo "Waiting for Temporal to be ready..."
-          # Give Temporal time to initialize (auto-setup needs to start services)
-          sleep 30
-          for i in {1..60}; do
-            if nc -z localhost 7233 2>/dev/null; then
-              echo "Temporal port is open, waiting for full initialization..."
-              sleep 10
-              echo "Temporal is ready!"
-              exit 0
-            fi
-            echo "Attempt $i: Temporal not ready yet, waiting..."
-            sleep 3
-          done
-          echo "Temporal failed to start"
-          exit 1
 
       - name: Generate review input
         run: |
