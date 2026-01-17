@@ -5,13 +5,13 @@
   "overallRecommendation": "APPROVE",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Well-structured API route", "Good error handling", "Clean separation of concerns"]
     },
     {
-      "agentName": "TestQuality",
+      "agentName": "Test Quality",
       "riskLevel": "MEDIUM",
       "recommendation": "APPROVE",
       "findings": ["No tests added for new API endpoint", "Consider adding integration tests"]
