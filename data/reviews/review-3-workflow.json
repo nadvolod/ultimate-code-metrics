@@ -5,7 +5,7 @@
   "overallRecommendation": "REQUEST_CHANGES",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "MEDIUM",
       "recommendation": "REQUEST_CHANGES",
       "findings": ["Workflow logic needs refactoring", "Magic numbers should be extracted to constants", "Missing documentation for complex logic"]

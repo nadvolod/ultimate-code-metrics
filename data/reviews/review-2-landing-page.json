@@ -5,7 +5,7 @@
   "overallRecommendation": "APPROVE",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Clean component structure", "Good use of Tailwind CSS", "Responsive design implemented"]
