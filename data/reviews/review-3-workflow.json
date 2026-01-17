@@ -5,13 +5,13 @@
   "overallRecommendation": "REQUEST_CHANGES",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "MEDIUM",
       "recommendation": "REQUEST_CHANGES",
       "findings": ["Workflow logic needs refactoring", "Magic numbers should be extracted to constants", "Missing documentation for complex logic"]
     },
     {
-      "agentName": "TestQuality",
+      "agentName": "Test Quality",
       "riskLevel": "HIGH",
       "recommendation": "REQUEST_CHANGES",
       "findings": ["No unit tests for workflow", "Critical path lacks test coverage", "Add integration tests before merging"]
