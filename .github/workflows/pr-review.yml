@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +74,7 @@ jobs:
             const marker = '<!-- UTM_AI_REVIEW -->';
 
             // Format the comment body
-            let body = marker + '\n# 🤖 AI Code Review\n\n';
+            let body = marker + '\n# 🤖 Ultimate Code Metrics Review\n\n';
             body += `**Recommendation:** ${output.overallRecommendation}\n\n`;
 
             for (const agent of output.agents) {
@@ -85,6 +85,9 @@ jobs:
               }
               body += '\n';
             }
+
+            body += '\n---\n';
+            body += '📊 [View in Dashboard](https://v0-ultimatetestmetrics.vercel.app/dashboard)\n';
 
             // Find existing comment or create new
             const { data: comments } = await github.rest.issues.listComments({
@@ -110,3 +113,18 @@ jobs:
                 body
               });
             }
+
+      - name: Persist Review to Dashboard
+        run: |
+          # Add PR metadata to the review output
+          jq --arg pr "${{ github.event.pull_request.number }}" \
+             --arg title "${{ github.event.pull_request.title }}" \
+             --arg author "${{ github.event.pull_request.user.login }}" \
+             '. + {prNumber: ($pr | tonumber), prTitle: $title, author: $author}' \
+             /tmp/review-output.json > data/reviews/review-${{ github.event.pull_request.number }}.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/reviews/review-${{ github.event.pull_request.number }}.json
+          git commit -m "chore: add review data for PR #${{ github.event.pull_request.number }}"
+          git push origin HEAD:${{ github.head_ref }}
