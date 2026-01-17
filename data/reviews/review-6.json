@@ -1,0 +1,43 @@
+{
+  "overallRecommendation": "BLOCK",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The workflow logic in 'pr-review.yml' (lines 1-130) is complex and could benefit from refactoring for clarity. For example, the error handling in the 'Start Temporal' step lacks granularity and could be improved.",
+        "The use of magic numbers, such as the 30 in the 'for' loop (line 25), should be replaced with a named constant to enhance readability.",
+        "The error handling in 'WorkerApp.java' (lines 1-123) is too generic. Specific exceptions should be caught and handled appropriately to provide clearer feedback on failures.",
+        "The 'generate-review-input.sh' script (lines 1-37) does not handle the case where 'git diff' fails, which could lead to unhandled errors in the workflow."
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "The tests have failed, as indicated by the test summary showing no tests were run.",
+        "Test Suggestion 1: Implement unit tests for the 'WorkerApp' class to ensure that input validation and error handling are correctly functioning, especially for invalid arguments and file I/O errors.",
+        "Test Suggestion 2: Create integration tests for the Temporal workflow to verify that the entire review process works as expected, including the interaction between the agents and the workflow execution.",
+        "Test Suggestion 3: Add tests for the 'generate-review-input.sh' script to ensure that it correctly generates valid JSON output for various scenarios, including edge cases like missing arguments or empty diffs."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected"
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-17T14:34:20.612Z",
+    "tookMs": 19673,
+    "model": "gpt-4o-mini"
+  },
+  "prNumber": 6,
+  "prTitle": "feat: restore Java Temporal workflow and add sample PR reviews",
+  "author": "nadvolod"
+}
