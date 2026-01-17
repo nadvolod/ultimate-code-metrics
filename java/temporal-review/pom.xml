@@ -79,13 +79,6 @@
                             <mainClass>com.utm.temporal.WorkerApp</mainClass>
                         </configuration>
                     </execution>
-                    <!-- Run Temporal Client (Starter) -->
-                    <execution>
-                        <id>workflow</id>
-                        <configuration>
-                            <mainClass>solution.temporal.Starter</mainClass>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
