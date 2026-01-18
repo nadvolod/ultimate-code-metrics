@@ -24,7 +24,7 @@ Ultimate Test Metrics is an AI-powered PR review orchestration system built on T
 - **SLF4J 2.0.9** for logging
 
 ### Testing
-- Frontend: (To be implemented with Playwright)
+- Frontend: No testing infrastructure currently implemented (Playwright planned)
 - Backend: JUnit (standard Java testing)
 
 ## Build & Test Commands
