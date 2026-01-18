@@ -62,7 +62,7 @@ mvn clean install -DskipTests
 mvn test
 
 # Run specific module
-cd temporal-review
+cd java/temporal-review
 mvn clean install
 ```
 
@@ -100,7 +100,7 @@ temporal operator namespace list
   - Classes: PascalCase (e.g., `PRReviewWorkflow`)
   - Methods/variables: camelCase (e.g., `executeReview`)
   - Constants: UPPER_SNAKE_CASE (e.g., `TASK_QUEUE_NAME`)
-- Package structure follows `com.utm.<module>` pattern
+- Package structure follows `com.utm.temporal.<subpackage>` pattern
 - Use dependency injection where appropriate
 - Handle exceptions appropriately with meaningful messages
 
