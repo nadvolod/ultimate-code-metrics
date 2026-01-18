@@ -100,7 +100,7 @@ temporal operator namespace list
   - Classes: PascalCase (e.g., `PRReviewWorkflow`)
   - Methods/variables: camelCase (e.g., `executeReview`)
   - Constants: UPPER_SNAKE_CASE (e.g., `TASK_QUEUE_NAME`)
-- Package structure follows `com.utm.temporal.<subpackage>` pattern
+- Package structure: `com.utm.temporal` with subpackages for modules (e.g., `com.utm.temporal.agent`, `com.utm.temporal.workflow`)
 - Use dependency injection where appropriate
 - Handle exceptions appropriately with meaningful messages
 
