@@ -2,6 +2,7 @@ package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
 import com.utm.temporal.activity.PriorityActivity;
+import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
 import com.utm.temporal.model.AgentResult;
@@ -36,6 +37,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private final TestQualityActivity testQualityActivity = Workflow.newActivityStub(
             TestQualityActivity.class, ACTIVITY_OPTIONS
     );
+    private final ComplexityQualityActivity complexityQualityActivity = Workflow.newActivityStub(
+            ComplexityQualityActivity.class, ACTIVITY_OPTIONS
+    );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
     );
@@ -67,14 +71,18 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             logger.info("[3/4] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(request);
             logger.info("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
+          
+            // 3. Call Complexity Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[3/4] Calling Complexity Agent...");
+            AgentResult complexity = complexityQualityActivity.analyze(
+                request
+            );
 
             // 4. Call Priority Agent with results from other agents
             logger.info("[4/4] Calling Priority Agent...");
             AgentResult priority = priorityActivity.prioritizeIssues(
                     request,
                     Arrays.asList(codeQuality, testQuality, security)
-            );
-            logger.info("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
 
             // 5. Aggregate results from all agents
             String overall = aggregate(codeQuality, testQuality, security, priority);

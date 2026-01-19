@@ -9,6 +9,7 @@ import com.utm.temporal.activity.CodeQualityActivityImpl;
 import com.utm.temporal.activity.PriorityActivityImpl;
 import com.utm.temporal.activity.SecurityQualityActivityImpl;
 import com.utm.temporal.activity.TestQualityActivityImpl;
+import com.utm.temporal.agent.ComplexityAgent;
 import com.utm.temporal.agent.CodeQualityAgent;
 import com.utm.temporal.agent.PriorityAgent;
 import com.utm.temporal.agent.SecurityAgent;
@@ -80,6 +81,7 @@ public class WorkerApp {
             TestQualityAgent testQualityAgent = new TestQualityAgent();
             SecurityAgent securityAgent = new SecurityAgent();
             PriorityAgent priorityAgent = new PriorityAgent();
+            ComplexityAgent complexityAgent = new ComplexityAgent();
 
             // Register activity implementations
             worker.registerActivitiesImplementations(
@@ -87,6 +89,7 @@ public class WorkerApp {
                     new TestQualityActivityImpl(testQualityAgent),
                     new SecurityQualityActivityImpl(securityAgent),
                     new PriorityActivityImpl(priorityAgent));
+                    new ComplexityQualityActivityImpl(complexityAgent));
 
             // Start worker in background
             factory.start();

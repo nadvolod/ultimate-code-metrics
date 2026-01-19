@@ -9,6 +9,7 @@
 
 # production
 /build
+/java/temporal-review/target/
 
 # debug
 npm-debug.log*
