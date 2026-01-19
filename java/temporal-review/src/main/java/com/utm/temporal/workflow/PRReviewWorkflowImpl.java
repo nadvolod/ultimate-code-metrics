@@ -11,12 +11,15 @@ import com.utm.temporal.model.ReviewResponse;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
+import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
 public class PRReviewWorkflowImpl implements PRReviewWorkflow {
+    private static final Logger logger = Workflow.getLogger(PRReviewWorkflowImpl.class);
+
     // 1. configure how activities should behave
     private static final ActivityOptions ACTIVITY_OPTIONS = ActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofSeconds(60))  // How long can one attempt take?
@@ -45,33 +48,33 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         // Use this instead of System.currentTimeMillis()
         long startMs = Workflow.currentTimeMillis();
 
-        System.out.println("=".repeat(60));
-        System.out.println("Starting PR Review: " + request.prTitle);
-        System.out.println("=".repeat(60));
+        logger.info("=".repeat(60));
+        logger.info("Starting PR Review: " + request.prTitle);
+        logger.info("=".repeat(60));
 
         try {
             // 1. Call Code Quality Agent
-            System.out.println("[1/4] Calling Code Quality Agent...");
+            logger.info("[1/4] Calling Code Quality Agent...");
             AgentResult codeQuality = codeQualityActivity.analyze(request);
-            System.out.println("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
+            logger.info("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
             // 2. Call Test Quality Agent
-            System.out.println("[2/4] Calling Test Quality Agent...");
+            logger.info("[2/4] Calling Test Quality Agent...");
             AgentResult testQuality = testQualityActivity.analyze(request);
-            System.out.println("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
+            logger.info("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
             // 3. Call Security Agent
-            System.out.println("[3/4] Calling Security Agent...");
+            logger.info("[3/4] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(request);
-            System.out.println("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
+            logger.info("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
             // 4. Call Priority Agent with results from other agents
-            System.out.println("[4/4] Calling Priority Agent...");
+            logger.info("[4/4] Calling Priority Agent...");
             AgentResult priority = priorityActivity.prioritizeIssues(
                     request,
                     Arrays.asList(codeQuality, testQuality, security)
             );
-            System.out.println("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
+            logger.info("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
 
             // 5. Aggregate results from all agents
             String overall = aggregate(codeQuality, testQuality, security, priority);
@@ -94,9 +97,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                     request.author
             );
 
-            System.out.println("=".repeat(60));
-            System.out.println("Review Complete: " + overall + " (took " + tookMs + "ms)");
-            System.out.println("=".repeat(60));
+            logger.info("=".repeat(60));
+            logger.info("Review Complete: " + overall + " (took " + tookMs + "ms)");
+            logger.info("=".repeat(60));
 
             return response;
 
