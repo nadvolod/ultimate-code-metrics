@@ -1,6 +1,7 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
+import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
 import com.utm.temporal.model.AgentResult;
@@ -32,6 +33,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private final TestQualityActivity testQualityActivity = Workflow.newActivityStub(
             TestQualityActivity.class, ACTIVITY_OPTIONS
     );
+    private final ComplexityQualityActivity complexityQualityActivity = Workflow.newActivityStub(
+            ComplexityQualityActivity.class, ACTIVITY_OPTIONS
+    );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
     );
@@ -47,30 +51,37 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
         try {
             // 1. Call Code Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[1/3] Calling Code Quality Agent...");
+            System.out.println("[1/4] Calling Code Quality Agent...");
             AgentResult codeQuality = codeQualityActivity.analyze(
                     request
             );
             System.out.println("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
             // 2. Call Test Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[2/3] Calling Test Quality Agent...");
+            System.out.println("[2/4] Calling Test Quality Agent...");
             AgentResult testQuality = testQualityActivity.analyze(
                 request
             );
             System.out.println("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
-            // 3. Call Security Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[3/3] Calling Security Agent...");
+            // 3. Call Complexity Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[3/4] Calling Complexity Agent...");
+            AgentResult complexity = complexityQualityActivity.analyze(
+                request
+            );
+            System.out.println("      → " + complexity.recommendation + " (Risk: " + complexity.riskLevel + ")");
+
+            // 4. Call Security Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[4/4] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(
                 request
             );
             System.out.println("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
-            // 4. Aggregate results
-            String overall = aggregate(codeQuality, testQuality, security);
+            // 5. Aggregate results
+            String overall = aggregate(codeQuality, testQuality, complexity, security);
 
-            // 5. Build response
+            // 6. Build response
             // Use this instead of System.currentTimeMillis()
             long tookMs = Workflow.currentTimeMillis() - startMs;
 
@@ -83,7 +94,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
             ReviewResponse response = new ReviewResponse(
                     overall,
-                    Arrays.asList(codeQuality, testQuality, security),
+                    Arrays.asList(codeQuality, testQuality, complexity, security),
                     metadata,
                     request.prNumber,
                     request.prTitle,
