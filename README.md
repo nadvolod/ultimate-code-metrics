@@ -1,6 +1,18 @@
 # Ultimate Test Metrics
 
-AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across three dimensions: code quality, test quality, and security.
+| Metric | Current |
+| --- | --- |
+| Active Agents | 4 |
+| Cyclomatic Complexity (avg) | 12 |
+| Cognitive Complexity (avg) | 18 |
+| Code Quality Coverage | ✅ |
+| Test Quality Coverage | ✅ |
+| Complexity Coverage | ✅ |
+| Security Coverage | ✅ |
+
+_Baseline metrics reflect dummy-mode sample values._
+
+AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across four dimensions: code quality, test quality, security, and complexity.
 
 ## Overview
 
@@ -10,17 +22,17 @@ This project uses Temporal to orchestrate parallel PR reviews by specialized AI 
 
 The system follows the Temporal workflow pattern:
 
-- **Workflow** (`PRReviewWorkflow`): Orchestrates three specialized agents sequentially
+- **Workflow** (`PRReviewWorkflow`): Orchestrates four specialized agents sequentially
 - **Activities**: Thin wrappers around agents, registered with Temporal workers
-- **Agents**: Business logic for code quality, test quality, and security analysis
+- **Agents**: Business logic for code quality, test quality, complexity, and security analysis
 - **LLM Client**: Abstraction for AI model calls (currently OpenAI)
 
 ### Data Flow
 
 ```
 RunReview CLI → Temporal Client → PRReviewWorkflow
-  → [CodeQualityActivity → TestQualityActivity → SecurityQualityActivity]
-  → [CodeQualityAgent → TestQualityAgent → SecurityAgent]
+  → [CodeQualityActivity → TestQualityActivity → ComplexityQualityActivity → SecurityQualityActivity]
+  → [CodeQualityAgent → TestQualityAgent → ComplexityAgent → SecurityAgent]
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
@@ -39,8 +51,8 @@ ultimate-test-metrics/
         ├── pom.xml
         └── src/main/java/com/utm/temporal/
             ├── RunReview.java      # CLI entry point
-            ├── activity/           # 3 activity interfaces + implementations
-            ├── agent/              # 3 LLM agents (Code, Test, Security)
+            ├── activity/           # 4 activity interfaces + implementations
+            ├── agent/              # 4 LLM agents (Code, Test, Complexity, Security)
             ├── llm/                # LLM client abstraction (OpenAI)
             ├── model/              # Data models (Request, Response, etc.)
             └── workflow/           # Workflow interface + implementation
@@ -132,7 +144,7 @@ mvn exec:java -Dexec.args="../../sample-input.json ../../sample-output.json"
 1. Connects to Temporal server at `localhost:7233`
 2. Starts a worker registered to the `pr-review` task queue
 3. Executes the `PRReviewWorkflow` synchronously
-4. Calls three agents in sequence (each blocks for ~2-3 seconds)
+4. Calls four agents in sequence (each blocks for ~2-3 seconds)
 5. Aggregates results and writes to `sample-output.json`
 
 ### 5. View Results
@@ -240,16 +252,26 @@ The `RunReview` CLI uses these exit codes:
   "overallRecommendation": "APPROVE",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Code follows naming conventions", "Functions are appropriately sized"]
     },
     {
-      "agentName": "TestQuality",
+      "agentName": "Test Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Test coverage is adequate", "All tests passing"]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 12",
+        "Cognitive Complexity: 18",
+        "Primary driver: nested conditionals in request validation"
+      ]
     },
     {
       "agentName": "Security",
