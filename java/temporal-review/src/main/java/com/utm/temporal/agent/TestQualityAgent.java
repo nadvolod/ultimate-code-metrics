@@ -52,7 +52,7 @@ public class TestQualityAgent {
             }
 
             // Build system prompt with rules
-            String systemPrompt = buildSystemPrompt(testSummary);
+            String systemPrompt = buildSystemPrompt();
 
             // Build user prompt with PR details
             String userPrompt = String.format(
@@ -89,7 +89,7 @@ public class TestQualityAgent {
         }
     }
 
-    private String buildSystemPrompt(TestSummary testSummary) {
+    private String buildSystemPrompt() {
         return "You are a Test Quality Reviewer analyzing pull request diffs.\n\n" +
                "Your task is to assess whether the diff is adequately tested.\n\n" +
                "STRICT RULES:\n" +
