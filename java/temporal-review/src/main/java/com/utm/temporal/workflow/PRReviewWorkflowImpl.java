@@ -1,6 +1,7 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
+import com.utm.temporal.activity.PriorityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
 import com.utm.temporal.model.AgentResult;
@@ -25,7 +26,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                     .build())
             .build();
 
-    //2. create activity stubs with non-existent @ActivityInterface. Using Workflow
+    // 2. create activity stubs for each agent
     private final CodeQualityActivity codeQualityActivity = Workflow.newActivityStub(
             CodeQualityActivity.class, ACTIVITY_OPTIONS
     );
@@ -34,6 +35,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
+    );
+    private final PriorityActivity priorityActivity = Workflow.newActivityStub(
+            PriorityActivity.class, ACTIVITY_OPTIONS
     );
 
     @Override
@@ -46,36 +50,36 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         System.out.println("=".repeat(60));
 
         try {
-            // 1. Call Code Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[1/3] Calling Code Quality Agent...");
-            AgentResult codeQuality = codeQualityActivity.analyze(
-                    request
-            );
+            // 1. Call Code Quality Agent
+            System.out.println("[1/4] Calling Code Quality Agent...");
+            AgentResult codeQuality = codeQualityActivity.analyze(request);
             System.out.println("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
-            // 2. Call Test Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[2/3] Calling Test Quality Agent...");
-            AgentResult testQuality = testQualityActivity.analyze(
-                request
-            );
+            // 2. Call Test Quality Agent
+            System.out.println("[2/4] Calling Test Quality Agent...");
+            AgentResult testQuality = testQualityActivity.analyze(request);
             System.out.println("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
-            // 3. Call Security Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[3/3] Calling Security Agent...");
-            AgentResult security = securityQualityActivity.analyze(
-                request
-            );
+            // 3. Call Security Agent
+            System.out.println("[3/4] Calling Security Agent...");
+            AgentResult security = securityQualityActivity.analyze(request);
             System.out.println("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
-            // 4. Aggregate results
-            String overall = aggregate(codeQuality, testQuality, security);
+            // 4. Call Priority Agent with results from other agents
+            System.out.println("[4/4] Calling Priority Agent...");
+            AgentResult priority = priorityActivity.prioritizeIssues(
+                    request,
+                    Arrays.asList(codeQuality, testQuality, security)
+            );
+            System.out.println("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
 
-            // 5. Build response
-            // Use this instead of System.currentTimeMillis()
+            // 5. Aggregate results from all agents
+            String overall = aggregate(codeQuality, testQuality, security, priority);
+
+            // 6. Build response
             long tookMs = Workflow.currentTimeMillis() - startMs;
 
             Metadata metadata = new Metadata(
-//                    Instant.now().toString(),
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
                     System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini")
@@ -83,7 +87,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
             ReviewResponse response = new ReviewResponse(
                     overall,
-                    Arrays.asList(codeQuality, testQuality, security),
+                    Arrays.asList(codeQuality, testQuality, security, priority),
                     metadata,
                     request.prNumber,
                     request.prTitle,

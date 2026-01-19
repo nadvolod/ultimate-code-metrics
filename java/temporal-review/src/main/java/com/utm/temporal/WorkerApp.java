@@ -6,9 +6,11 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.temporal.activity.CodeQualityActivityImpl;
+import com.utm.temporal.activity.PriorityActivityImpl;
 import com.utm.temporal.activity.SecurityQualityActivityImpl;
 import com.utm.temporal.activity.TestQualityActivityImpl;
 import com.utm.temporal.agent.CodeQualityAgent;
+import com.utm.temporal.agent.PriorityAgent;
 import com.utm.temporal.agent.SecurityAgent;
 import com.utm.temporal.agent.TestQualityAgent;
 import com.utm.temporal.model.ReviewRequest;
@@ -77,12 +79,14 @@ public class WorkerApp {
             CodeQualityAgent codeQualityAgent = new CodeQualityAgent();
             TestQualityAgent testQualityAgent = new TestQualityAgent();
             SecurityAgent securityAgent = new SecurityAgent();
+            PriorityAgent priorityAgent = new PriorityAgent();
 
             // Register activity implementations
             worker.registerActivitiesImplementations(
                     new CodeQualityActivityImpl(codeQualityAgent),
                     new TestQualityActivityImpl(testQualityAgent),
-                    new SecurityQualityActivityImpl(securityAgent));
+                    new SecurityQualityActivityImpl(securityAgent),
+                    new PriorityActivityImpl(priorityAgent));
 
             // Start worker in background
             factory.start();
