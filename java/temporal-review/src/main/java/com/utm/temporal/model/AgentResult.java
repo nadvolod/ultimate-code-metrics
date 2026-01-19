@@ -6,7 +6,7 @@ import java.util.List;
  * Result from a single AI agent review.
  */
 public class AgentResult {
-    public String agentName;        // "Code Quality", "Test Quality", "Security"
+    public String agentName;        // "Code Quality", "Test Quality", "Complexity", "Security"
     public String riskLevel;        // "LOW", "MEDIUM", "HIGH"
     public String recommendation;   // "APPROVE", "REQUEST_CHANGES", "BLOCK"
     public List<String> findings;
