@@ -7,6 +7,7 @@
 | Cognitive Complexity (avg) | 18 |
 | Code Quality Coverage | ✅ |
 | Test Quality Coverage | ✅ |
+| Complexity Coverage | ✅ |
 | Security Coverage | ✅ |
 
 _Baseline metrics reflect dummy-mode sample values._
