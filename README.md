@@ -1,6 +1,6 @@
 # Ultimate Test Metrics
 
-AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across three dimensions: code quality, test quality, and security.
+AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across four dimensions: code quality, test quality, security, and documentation.
 
 ## Overview
 
@@ -10,17 +10,17 @@ This project uses Temporal to orchestrate parallel PR reviews by specialized AI 
 
 The system follows the Temporal workflow pattern:
 
-- **Workflow** (`PRReviewWorkflow`): Orchestrates three specialized agents sequentially
+- **Workflow** (`PRReviewWorkflow`): Orchestrates four specialized agents sequentially
 - **Activities**: Thin wrappers around agents, registered with Temporal workers
-- **Agents**: Business logic for code quality, test quality, and security analysis
+- **Agents**: Business logic for code quality, test quality, security, and documentation analysis
 - **LLM Client**: Abstraction for AI model calls (currently OpenAI)
 
 ### Data Flow
 
 ```
 RunReview CLI → Temporal Client → PRReviewWorkflow
-  → [CodeQualityActivity → TestQualityActivity → SecurityQualityActivity]
-  → [CodeQualityAgent → TestQualityAgent → SecurityAgent]
+  → [CodeQualityActivity → TestQualityActivity → SecurityQualityActivity → DocumentationQualityActivity]
+  → [CodeQualityAgent → TestQualityAgent → SecurityAgent → DocumentationAgent]
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
@@ -39,8 +39,8 @@ ultimate-test-metrics/
         ├── pom.xml
         └── src/main/java/com/utm/temporal/
             ├── RunReview.java      # CLI entry point
-            ├── activity/           # 3 activity interfaces + implementations
-            ├── agent/              # 3 LLM agents (Code, Test, Security)
+            ├── activity/           # 4 activity interfaces + implementations
+            ├── agent/              # 4 LLM agents (Code, Test, Security, Documentation)
             ├── llm/                # LLM client abstraction (OpenAI)
             ├── model/              # Data models (Request, Response, etc.)
             └── workflow/           # Workflow interface + implementation
@@ -132,7 +132,7 @@ mvn exec:java -Dexec.args="../../sample-input.json ../../sample-output.json"
 1. Connects to Temporal server at `localhost:7233`
 2. Starts a worker registered to the `pr-review` task queue
 3. Executes the `PRReviewWorkflow` synchronously
-4. Calls three agents in sequence (each blocks for ~2-3 seconds)
+4. Calls four agents in sequence (each blocks for ~2-3 seconds)
 5. Aggregates results and writes to `sample-output.json`
 
 ### 5. View Results
@@ -256,6 +256,12 @@ The `RunReview` CLI uses these exit codes:
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["No security vulnerabilities detected"]
+    },
+    {
+      "agentName": "Documentation",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["Documentation updates are sufficient for the user-facing changes"]
     }
   ],
   "metadata": {
