@@ -83,7 +83,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             AgentResult priority = priorityActivity.prioritizeIssues(
                     request,
                     Arrays.asList(codeQuality, testQuality, security)
-
+            );
             // 5. Aggregate results from all agents
             String overall = aggregate(codeQuality, testQuality, security, priority);
 
