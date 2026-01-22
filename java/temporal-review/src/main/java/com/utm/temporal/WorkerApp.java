@@ -89,7 +89,6 @@ public class WorkerApp {
                     new TestQualityActivityImpl(testQualityAgent),
                     new SecurityQualityActivityImpl(securityAgent),
                     new PriorityActivityImpl(priorityAgent));
-                    new ComplexityQualityActivityImpl(complexityAgent));
 
             // Start worker in background
             factory.start();
