@@ -9,6 +9,7 @@
 
 # production
 /build
+/java/temporal-review/target/
 
 # maven
 /java/**/target/

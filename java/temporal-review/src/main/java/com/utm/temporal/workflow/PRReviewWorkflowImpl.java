@@ -2,6 +2,7 @@ package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
 import com.utm.temporal.activity.DuplicationQualityActivity;
+import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
 import com.utm.temporal.model.AgentResult;
@@ -32,6 +33,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     );
     private final TestQualityActivity testQualityActivity = Workflow.newActivityStub(
             TestQualityActivity.class, ACTIVITY_OPTIONS
+    );
+    private final ComplexityQualityActivity complexityQualityActivity = Workflow.newActivityStub(
+            ComplexityQualityActivity.class, ACTIVITY_OPTIONS
     );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
@@ -64,8 +68,15 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             );
             System.out.println("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
-            // 3. Call Security Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[3/4] Calling Security Agent...");
+            // 3. Call Complexity Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[3/4] Calling Complexity Agent...");
+            AgentResult complexity = complexityQualityActivity.analyze(
+                request
+            );
+            System.out.println("      → " + complexity.recommendation + " (Risk: " + complexity.riskLevel + ")");
+
+            // 4. Call Security Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[4/4] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(
                 request
             );
@@ -79,7 +90,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             System.out.println("      → " + duplication.recommendation + " (Risk: " + duplication.riskLevel + ")");
 
             // 5. Aggregate results
-            String overall = aggregate(codeQuality, testQuality, security, duplication);
+            String overall = aggregate(codeQuality, testQuality, complexity, security);
 
             // 6. Build response
             // Use this instead of System.currentTimeMillis()
