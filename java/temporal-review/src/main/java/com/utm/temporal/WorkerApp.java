@@ -6,11 +6,13 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.temporal.activity.CodeQualityActivityImpl;
+import com.utm.temporal.activity.DuplicationQualityActivityImpl;
 import com.utm.temporal.activity.ComplexityQualityActivityImpl;
 import com.utm.temporal.activity.SecurityQualityActivityImpl;
 import com.utm.temporal.activity.TestQualityActivityImpl;
 import com.utm.temporal.agent.ComplexityAgent;
 import com.utm.temporal.agent.CodeQualityAgent;
+import com.utm.temporal.agent.DuplicationAgent;
 import com.utm.temporal.agent.SecurityAgent;
 import com.utm.temporal.agent.TestQualityAgent;
 import com.utm.temporal.model.ReviewRequest;
@@ -79,6 +81,7 @@ public class WorkerApp {
             CodeQualityAgent codeQualityAgent = new CodeQualityAgent();
             TestQualityAgent testQualityAgent = new TestQualityAgent();
             SecurityAgent securityAgent = new SecurityAgent();
+            DuplicationAgent duplicationAgent = new DuplicationAgent();
             ComplexityAgent complexityAgent = new ComplexityAgent();
 
             // Register activity implementations

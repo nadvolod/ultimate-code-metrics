@@ -11,6 +11,9 @@
 /build
 /java/temporal-review/target/
 
+# maven
+/java/**/target/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

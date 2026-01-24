@@ -1,6 +1,7 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
+import com.utm.temporal.activity.DuplicationQualityActivity;
 import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
@@ -38,6 +39,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
+    );
+    private final DuplicationQualityActivity duplicationQualityActivity = Workflow.newActivityStub(
+            DuplicationQualityActivity.class, ACTIVITY_OPTIONS
     );
 
     @Override
@@ -78,6 +82,13 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             );
             System.out.println("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
+            // 4. Call Duplication Agent (BLOCKS for ~2-3 seconds)
+            System.out.println("[4/4] Calling Duplication Agent...");
+            AgentResult duplication = duplicationQualityActivity.analyze(
+                request
+            );
+            System.out.println("      → " + duplication.recommendation + " (Risk: " + duplication.riskLevel + ")");
+
             // 5. Aggregate results
             String overall = aggregate(codeQuality, testQuality, complexity, security);
 
@@ -94,7 +105,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
             ReviewResponse response = new ReviewResponse(
                     overall,
-                    Arrays.asList(codeQuality, testQuality, complexity, security),
+                    Arrays.asList(codeQuality, testQuality, security, duplication),
                     metadata,
                     request.prNumber,
                     request.prTitle,
