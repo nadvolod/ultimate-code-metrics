@@ -1,0 +1,42 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Workflow logic needs refactoring to improve clarity and maintainability.",
+        "Magic numbers should be extracted to constants for better readability and to avoid hardcoding values.",
+        "Missing documentation for complex logic makes it difficult for future developers to understand the intent and functionality."
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new workflow logic without any unit tests, which is critical for ensuring the correctness of the implementation.",
+        "Test Suggestion 1: Create unit tests for the new workflow logic to cover various scenarios, including normal operation and edge cases, to ensure that the workflow behaves as expected under different conditions.",
+        "Test Suggestion 2: Implement tests for error handling within the workflow, specifically testing how the system responds to invalid inputs or unexpected states, to ensure robustness.",
+        "Test Suggestion 3: Add integration tests that validate the interaction between the new workflow and existing components, ensuring that data flows correctly and that the overall system functions as intended."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected"
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-24T15:48:57.282Z",
+    "tookMs": 8669,
+    "model": "gpt-4o-mini"
+  },
+  "prNumber": 13,
+  "prTitle": "[WIP] Address feedback on Java Temporal workflow",
+  "author": "Copilot"
+}

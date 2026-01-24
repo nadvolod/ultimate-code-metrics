@@ -5,13 +5,13 @@
   "overallRecommendation": "APPROVE",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Clean component structure", "Good use of Tailwind CSS", "Responsive design implemented"]
     },
     {
-      "agentName": "TestQuality",
+      "agentName": "Test Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["UI components well-isolated for testing", "No critical test coverage gaps"]
