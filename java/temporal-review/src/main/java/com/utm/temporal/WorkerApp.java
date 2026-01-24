@@ -5,10 +5,7 @@ import java.nio.file.Files;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.utm.temporal.activity.CodeQualityActivityImpl;
-import com.utm.temporal.activity.PriorityActivityImpl;
-import com.utm.temporal.activity.SecurityQualityActivityImpl;
-import com.utm.temporal.activity.TestQualityActivityImpl;
+import com.utm.temporal.activity.*;
 import com.utm.temporal.agent.ComplexityAgent;
 import com.utm.temporal.agent.CodeQualityAgent;
 import com.utm.temporal.agent.PriorityAgent;
@@ -88,7 +85,7 @@ public class WorkerApp {
                     new CodeQualityActivityImpl(codeQualityAgent),
                     new TestQualityActivityImpl(testQualityAgent),
                     new SecurityQualityActivityImpl(securityAgent),
-                    new PriorityActivityImpl(priorityAgent));
+                    new PriorityActivityImpl(priorityAgent),
                     new ComplexityQualityActivityImpl(complexityAgent));
 
             // Start worker in background
