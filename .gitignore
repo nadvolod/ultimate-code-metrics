@@ -9,6 +9,7 @@
 
 # production
 /build
+/java/temporal-review/target/
 
 # java
 /java/**/target/
@@ -28,3 +29,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/java/temporal-review/target/*
+.idea

@@ -2,6 +2,8 @@ package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
 import com.utm.temporal.activity.DocumentationQualityActivity;
+import com.utm.temporal.activity.PriorityActivity;
+import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
 import com.utm.temporal.activity.TestQualityActivity;
 import com.utm.temporal.model.AgentResult;
@@ -11,12 +13,16 @@ import com.utm.temporal.model.ReviewResponse;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
+import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PRReviewWorkflowImpl implements PRReviewWorkflow {
+    private static final Logger logger = Workflow.getLogger(PRReviewWorkflowImpl.class);
+
     // 1. configure how activities should behave
     private static final ActivityOptions ACTIVITY_OPTIONS = ActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofSeconds(60))  // How long can one attempt take?
@@ -26,18 +32,23 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                     .build())
             .build();
 
-    //2. create activity stubs with non-existent @ActivityInterface. Using Workflow
+    // 2. create activity stubs for each agent
     private final CodeQualityActivity codeQualityActivity = Workflow.newActivityStub(
             CodeQualityActivity.class, ACTIVITY_OPTIONS
     );
     private final TestQualityActivity testQualityActivity = Workflow.newActivityStub(
             TestQualityActivity.class, ACTIVITY_OPTIONS
     );
+    private final ComplexityQualityActivity complexityQualityActivity = Workflow.newActivityStub(
+            ComplexityQualityActivity.class, ACTIVITY_OPTIONS
+    );
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
     );
     private final DocumentationQualityActivity documentationQualityActivity = Workflow.newActivityStub(
             DocumentationQualityActivity.class, ACTIVITY_OPTIONS
+    private final PriorityActivity priorityActivity = Workflow.newActivityStub(
+            PriorityActivity.class, ACTIVITY_OPTIONS
     );
 
     @Override
@@ -45,65 +56,72 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         // Use this instead of System.currentTimeMillis()
         long startMs = Workflow.currentTimeMillis();
 
-        System.out.println("=".repeat(60));
-        System.out.println("Starting PR Review: " + request.prTitle);
-        System.out.println("=".repeat(60));
+        logger.info("=".repeat(60));
+        logger.info("Starting PR Review: " + request.prTitle);
+        logger.info("=".repeat(60));
 
         try {
-            // 1. Call Code Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[1/4] Calling Code Quality Agent...");
-            AgentResult codeQuality = codeQualityActivity.analyze(
-                    request
-            );
-            System.out.println("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
+            // Collect all agent results in a list
+            List<AgentResult> results = new ArrayList<>();
 
-            // 2. Call Test Quality Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[2/4] Calling Test Quality Agent...");
-            AgentResult testQuality = testQualityActivity.analyze(
-                request
-            );
-            System.out.println("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
+            // 1. Call Code Quality Agent
+            logger.info("[1/5] Calling Code Quality Agent...");
+            AgentResult codeQuality = codeQualityActivity.analyze(request);
+            results.add(codeQuality);
+            logger.info("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
-            // 3. Call Security Agent (BLOCKS for ~2-3 seconds)
-            System.out.println("[3/4] Calling Security Agent...");
-            AgentResult security = securityQualityActivity.analyze(
-                request
-            );
-            System.out.println("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
+            // 2. Call Test Quality Agent
+            logger.info("[2/5] Calling Test Quality Agent...");
+            AgentResult testQuality = testQualityActivity.analyze(request);
+            results.add(testQuality);
+            logger.info("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
-            // 4. Call Documentation Agent
-            System.out.println("[4/4] Calling Documentation Agent...");
-            AgentResult documentation = documentationQualityActivity.analyze(
-                request
-            );
-            System.out.println("      → " + documentation.recommendation + " (Risk: " + documentation.riskLevel + ")");
+            // 3. Call Security Agent
+            logger.info("[3/5] Calling Security Agent...");
+            AgentResult security = securityQualityActivity.analyze(request);
+            results.add(security);
+            logger.info("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
-            // 5. Aggregate results
-            String overall = aggregate(codeQuality, testQuality, security, documentation);
+            // 4. Call Complexity Agent
+            logger.info("[4/5] Calling Complexity Agent...");
+            AgentResult complexity = complexityQualityActivity.analyze(request);
+            results.add(complexity);
+            logger.info("      → " + complexity.recommendation + " (Risk: " + complexity.riskLevel + ")");
 
-            // 6. Build response
-            // Use this instead of System.currentTimeMillis()
+            // 5. Call Priority Agent with results from other agents
+            logger.info("[5/5] Calling Priority Agent...");
+            AgentResult priority = priorityActivity.prioritizeIssues(request, results);
+            results.add(priority);
+            logger.info("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
+          
+            logger.info("[6/6] Calling Documentation Agent...");
+            AgentResult docs = documentationQualityActivity.prioritizeIssues(request, results);
+            results.add(docs);
+
+            // 6. Aggregate results from all agents
+            String overall = aggregate(results);
+
+            // 7. Build response
             long tookMs = Workflow.currentTimeMillis() - startMs;
 
             Metadata metadata = new Metadata(
-//                    Instant.now().toString(),
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
-                    System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini")
+                    "gpt-4o-mini"
             );
 
             ReviewResponse response = new ReviewResponse(
                     overall,
-                    Arrays.asList(codeQuality, testQuality, security, documentation),
+                    results,
                     metadata,
                     request.prNumber,
                     request.prTitle,
                     request.author
             );
 
-            System.out.println("=".repeat(60));
-            System.out.println("Review Complete: " + overall + " (took " + tookMs + "ms)");
-            System.out.println("=".repeat(60));
+            logger.info("=".repeat(60));
+            logger.info("Review Complete: " + overall + " (took " + tookMs + "ms)");
+            logger.info("=".repeat(60));
 
             return response;
 
@@ -114,7 +132,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         }
 
     }
-    private String aggregate(AgentResult... results) {
+    private String aggregate(List<AgentResult> results) {
         // Check for BLOCK
         for (AgentResult result : results) {
             if ("BLOCK".equals(result.recommendation)) {

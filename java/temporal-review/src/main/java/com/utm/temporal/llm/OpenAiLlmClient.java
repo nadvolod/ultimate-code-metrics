@@ -131,6 +131,17 @@ public class OpenAiLlmClient implements LlmClient {
                    "    \"Error handling is present and appropriate\"\n" +
                    "  ]\n" +
                    "}";
+        } else if (systemMessage.contains("complexity")) {
+            return "{\n" +
+                   "  \"agentName\": \"Complexity\",\n" +
+                   "  \"riskLevel\": \"LOW\",\n" +
+                   "  \"recommendation\": \"APPROVE\",\n" +
+                   "  \"findings\": [\n" +
+                   "    \"Cyclomatic Complexity: 12\",\n" +
+                   "    \"Cognitive Complexity: 18\",\n" +
+                   "    \"Primary driver: nested conditionals in request validation\"\n" +
+                   "  ]\n" +
+                   "}";
         } else if (systemMessage.contains("test quality")) {
             return "{\n" +
                    "  \"agentName\": \"Test Quality\",\n" +

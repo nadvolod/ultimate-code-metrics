@@ -1,6 +1,18 @@
 # Ultimate Test Metrics
 
-AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across four dimensions: code quality, test quality, security, and documentation.
+| Metric | Current |
+| --- | --- |
+| Active Agents | 4 |
+| Cyclomatic Complexity (avg) | 12 |
+| Cognitive Complexity (avg) | 18 |
+| Code Quality Coverage | ✅ |
+| Test Quality Coverage | ✅ |
+| Complexity Coverage | ✅ |
+| Security Coverage | ✅ |
+
+_Baseline metrics reflect dummy-mode sample values._
+
+AI-powered PR review orchestration system built on Temporal workflows. Uses LLM agents to analyze pull requests across four dimensions: code quality, test quality, security, and complexity.
 
 ## Overview
 
@@ -12,15 +24,15 @@ The system follows the Temporal workflow pattern:
 
 - **Workflow** (`PRReviewWorkflow`): Orchestrates four specialized agents sequentially
 - **Activities**: Thin wrappers around agents, registered with Temporal workers
-- **Agents**: Business logic for code quality, test quality, security, and documentation analysis
+- **Agents**: Business logic for code quality, test quality, complexity, and security analysis
 - **LLM Client**: Abstraction for AI model calls (currently OpenAI)
 
 ### Data Flow
 
 ```
 RunReview CLI → Temporal Client → PRReviewWorkflow
-  → [CodeQualityActivity → TestQualityActivity → SecurityQualityActivity → DocumentationQualityActivity]
-  → [CodeQualityAgent → TestQualityAgent → SecurityAgent → DocumentationAgent]
+  → [CodeQualityActivity → TestQualityActivity → ComplexityQualityActivity → SecurityQualityActivity]
+  → [CodeQualityAgent → TestQualityAgent → ComplexityAgent → SecurityAgent]
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
@@ -40,7 +52,7 @@ ultimate-test-metrics/
         └── src/main/java/com/utm/temporal/
             ├── RunReview.java      # CLI entry point
             ├── activity/           # 4 activity interfaces + implementations
-            ├── agent/              # 4 LLM agents (Code, Test, Security, Documentation)
+            ├── agent/              # 4 LLM agents (Code, Test, Complexity, Security)
             ├── llm/                # LLM client abstraction (OpenAI)
             ├── model/              # Data models (Request, Response, etc.)
             └── workflow/           # Workflow interface + implementation
@@ -240,16 +252,26 @@ The `RunReview` CLI uses these exit codes:
   "overallRecommendation": "APPROVE",
   "agents": [
     {
-      "agentName": "CodeQuality",
+      "agentName": "Code Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Code follows naming conventions", "Functions are appropriately sized"]
     },
     {
-      "agentName": "TestQuality",
+      "agentName": "Test Quality",
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["Test coverage is adequate", "All tests passing"]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 12",
+        "Cognitive Complexity: 18",
+        "Primary driver: nested conditionals in request validation"
+      ]
     },
     {
       "agentName": "Security",
