@@ -31,7 +31,7 @@ export default function DashboardLayout({
         <header className="border-b border-border bg-card px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Monitor your test metrics and AI insights</p>
+            <p className="text-sm text-muted-foreground">Monitor your code quality metrics and AI insights</p>
           </div>
           <Button size="icon" variant="ghost">
             <Bell size={20} />
