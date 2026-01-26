@@ -65,6 +65,31 @@ jobs:
             -Dexec.args="/tmp/review-input.json /tmp/review-output.json"
         working-directory: java
 
+      - name: Get Vercel Preview URL
+        id: vercel-preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          GITHUB_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Get deployments for this branch
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            DEPLOYMENTS=$(curl -s "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&gitBranch=${GITHUB_REF}&state=READY&limit=1" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}")
+
+            # Extract URL from first deployment
+            PREVIEW_URL=$(echo $DEPLOYMENTS | jq -r '.deployments[0].url // empty')
+
+            if [ -n "$PREVIEW_URL" ]; then
+              echo "preview_url=https://${PREVIEW_URL}" >> $GITHUB_OUTPUT
+            else
+              echo "preview_url=https://v0-ultimatetestmetrics.vercel.app" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Fallback to production URL if secrets not configured
+            echo "preview_url=https://v0-ultimatetestmetrics.vercel.app" >> $GITHUB_OUTPUT
+          fi
+
       - name: Post PR Comment
         uses: actions/github-script@v7
         with:
@@ -72,9 +97,11 @@ jobs:
             const fs = require('fs');
             const output = JSON.parse(fs.readFileSync('/tmp/review-output.json', 'utf8'));
             const marker = '<!-- UTM_AI_REVIEW -->';
+            const dashboardUrl = '${{ steps.vercel-preview.outputs.preview_url }}';
 
             // Format the comment body
             let body = marker + '\n# 🤖 Ultimate Code Metrics Review\n\n';
+            body += `📊 [View in Dashboard](${dashboardUrl}/dashboard)\n\n`;
             body += `**Recommendation:** ${output.overallRecommendation}\n\n`;
 
             for (const agent of output.agents) {
@@ -85,9 +112,6 @@ jobs:
               }
               body += '\n';
             }
-
-            body += '\n---\n';
-            body += '📊 [View in Dashboard](https://v0-ultimatetestmetrics.vercel.app/dashboard)\n';
 
             // Find existing comment or create new
             const { data: comments } = await github.rest.issues.listComments({

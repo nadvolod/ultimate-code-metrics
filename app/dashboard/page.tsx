@@ -5,7 +5,7 @@ import { MetricCard } from "@/components/metric-card"
 import { ReportPanel } from "@/components/report-panel"
 import { dashboardMetrics, recentReports as mockReports } from "@/lib/mock-data"
 import type { TestReport } from "@/lib/types/review"
-import { TrendingUp, Loader2, RefreshCw } from "lucide-react"
+import { Loader2, RefreshCw } from "lucide-react"
 import type { DashboardMetrics } from "@/app/api/metrics/route"
 
 export default function DashboardPage() {
@@ -135,20 +135,6 @@ export default function DashboardPage() {
           ) : (
             displayMetrics.map((metric, idx) => <MetricCard key={idx} {...metric} index={idx} />)
           )}
-        </div>
-      </div>
-
-      {/* Chart Placeholder */}
-      <div className="bg-card border border-border rounded-lg p-6 animate-fade-in">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">PR Analysis Trend</h2>
-          <div className="flex items-center gap-2 text-sm text-success">
-            <TrendingUp size={16} />
-            <span>+12% this week</span>
-          </div>
-        </div>
-        <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border/50">
-          <p className="text-muted-foreground text-sm">Chart visualization would go here</p>
         </div>
       </div>
 
