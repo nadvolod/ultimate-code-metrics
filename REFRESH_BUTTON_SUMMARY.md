@@ -59,7 +59,7 @@ Try it now:
 
 ```bash
 # 1. Make sure server is running
-npm run dev
+pnpm dev
 
 # 2. Open dashboard
 open http://localhost:3000/dashboard
