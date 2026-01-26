@@ -1,63 +1,138 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { MetricCard } from "@/components/metric-card"
 import { ReportPanel } from "@/components/report-panel"
 import { dashboardMetrics, recentReports as mockReports } from "@/lib/mock-data"
 import type { TestReport } from "@/lib/types/review"
-import { TrendingUp, Loader2 } from "lucide-react"
+import { Loader2, RefreshCw } from "lucide-react"
+import type { DashboardMetrics } from "@/app/api/metrics/route"
 
 export default function DashboardPage() {
   const [reports, setReports] = useState<TestReport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [metricsLoading, setMetricsLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    async function fetchReports() {
-      try {
-        const response = await fetch("/api/reviews")
-        if (!response.ok) {
-          throw new Error("Failed to fetch reviews")
-        }
-        const data = await response.json()
-        setReports(data)
-      } catch (err) {
-        console.error("Error fetching reviews:", err)
-        setError(err instanceof Error ? err.message : "Failed to load reviews")
-      } finally {
-        setLoading(false)
-      }
+  const fetchMetrics = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setMetricsLoading(true)
     }
 
-    fetchReports()
+    try {
+      const response = await fetch("/api/metrics")
+      if (response.ok) {
+        const data = await response.json()
+        setMetrics(data)
+      }
+    } catch (err) {
+      console.error("Error fetching metrics:", err)
+    } finally {
+      if (isRefresh) {
+        setRefreshing(false)
+      } else {
+        setMetricsLoading(false)
+      }
+    }
   }, [])
+
+  const fetchReports = useCallback(async () => {
+    try {
+      const response = await fetch("/api/reviews")
+      if (!response.ok) {
+        throw new Error("Failed to fetch reviews")
+      }
+      const data = await response.json()
+      setReports(data)
+    } catch (err) {
+      console.error("Error fetching reviews:", err)
+      setError(err instanceof Error ? err.message : "Failed to load reviews")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([fetchMetrics(true), fetchReports()])
+  }, [fetchMetrics, fetchReports])
+
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
+
+  useEffect(() => {
+    fetchMetrics()
+  }, [fetchMetrics])
 
   // Use API data if available, otherwise fall back to mock data
   const displayReports = reports.length > 0 ? reports : mockReports
+
+  // Build metric cards from real data or fall back to mock
+  const displayMetrics = useMemo(() => {
+    if (!metrics) {
+      // Fall back to mock data
+      return dashboardMetrics
+    }
+
+    return [
+      {
+        label: "PRs Analyzed",
+        value: metrics.prsAnalyzed.toString(),
+        change: metrics.trend?.prsAnalyzed,
+        trend: metrics.trend?.direction,
+      },
+      {
+        label: "Avg Analysis Time",
+        value: `${metrics.avgAnalysisTimeMinutes} min`,
+      },
+      {
+        label: "Auto-Approved",
+        value: `${metrics.autoApprovedPct}%`,
+      },
+      {
+        label: "Engineering Hours Saved",
+        value: `${metrics.engineeringHoursSaved} hrs`,
+        tooltip: "Based on 27 min saved per PR (30 min manual review - 3 min AI analysis)",
+      },
+    ]
+  }, [metrics])
 
   return (
     <div className="space-y-8">
       {/* Metrics Grid */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">Overview Metrics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {dashboardMetrics.map((metric, idx) => (
-            <MetricCard key={idx} {...metric} index={idx} />
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">Overview Metrics</h2>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || metricsLoading}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:border-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh metrics"
+          >
+            <RefreshCw
+              size={16}
+              className={refreshing ? "animate-spin" : ""}
+            />
+            <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+          </button>
         </div>
-      </div>
-
-      {/* Chart Placeholder */}
-      <div className="bg-card border border-border rounded-lg p-6 animate-fade-in">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">PR Analysis Trend</h2>
-          <div className="flex items-center gap-2 text-sm text-success">
-            <TrendingUp size={16} />
-            <span>+12% this week</span>
+        {!metrics && !metricsLoading && (
+          <div className="text-center py-2 mb-4 text-xs text-muted-foreground bg-muted/30 rounded-lg border border-border/50">
+            Using sample data - Run PR reviews to see real metrics
           </div>
-        </div>
-        <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border/50">
-          <p className="text-muted-foreground text-sm">Chart visualization would go here</p>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metricsLoading ? (
+            <div className="col-span-full flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            displayMetrics.map((metric, idx) => <MetricCard key={idx} {...metric} index={idx} />)
+          )}
         </div>
       </div>
 
