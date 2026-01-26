@@ -96,8 +96,6 @@ export default function DashboardPage() {
       {
         label: "Engineering Hours Saved",
         value: `${metrics.engineeringHoursSaved} hrs`,
-        change: "+100%",
-        trend: "up" as const,
         tooltip: "Based on 27 min saved per PR (30 min manual review - 3 min AI analysis)",
       },
     ]
