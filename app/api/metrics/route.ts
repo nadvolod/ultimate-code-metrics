@@ -57,13 +57,11 @@ export async function GET() {
 
     // Average analysis time (in minutes)
     const totalMs = reviews.reduce((sum, r) => sum + (r.metadata?.tookMs || 0), 0)
-    const avgAnalysisTimeMinutes =
-      reviews.length > 0 ? (totalMs / reviews.length / 1000 / 60).toFixed(1) : "0"
+    const avgAnalysisTimeMinutes = (totalMs / reviews.length / 1000 / 60).toFixed(1)
 
     // Auto-approved percentage
     const approvedCount = reviews.filter((r) => r.overallRecommendation === "APPROVE").length
-    const autoApprovedPct =
-      reviews.length > 0 ? ((approvedCount / reviews.length) * 100).toFixed(0) : "0"
+    const autoApprovedPct = ((approvedCount / reviews.length) * 100).toFixed(0)
 
     // Engineering hours saved
     // Assumption: Manual review = 30 min, AI analysis = 3 min, saved = 27 min = 0.45 hours
