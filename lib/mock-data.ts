@@ -43,21 +43,21 @@ export const dashboardMetrics: MetricCard[] = [
     trend: "up",
   },
   {
-    label: "Avg Approval Time",
-    value: "2.3h",
+    label: "Avg Analysis Time",
+    value: "3.2 min",
     change: "-18%",
     trend: "down",
-  },
-  {
-    label: "Test Coverage",
-    value: "87.5%",
-    change: "+5.2%",
-    trend: "up",
   },
   {
     label: "Auto-Approved",
     value: "64%",
     change: "+8%",
+    trend: "up",
+  },
+  {
+    label: "Engineering Hours Saved",
+    value: "561 hrs",
+    change: "+100%",
     trend: "up",
   },
 ]
