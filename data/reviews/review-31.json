@@ -47,13 +47,13 @@
       "riskLevel": "HIGH",
       "recommendation": "BLOCK",
       "findings": [
-        "P0: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. [Code Quality] - Implement unit tests for PromptLoader and agent classes to ensure proper error handling and functionality."
+        "P0: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. [CodeQuality] - Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files."
       ]
     }
   ],
   "metadata": {
-    "generatedAt": "2026-01-27T10:03:31.400Z",
-    "tookMs": 22065,
+    "generatedAt": "2026-01-27T11:08:14.276Z",
+    "tookMs": 23905,
     "model": "gpt-4o-mini"
   },
   "prNumber": 31,
