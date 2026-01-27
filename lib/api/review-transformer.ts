@@ -159,11 +159,18 @@ export function transformReviewResponse(
 export function transformReviewResponses(
   reviews: Array<{ response: BackendReviewResponse; filename: string }>
 ): TestReport[] {
-  return reviews
-    .map(({ response, filename }) => transformReviewResponse(response, filename))
+  // Transform reviews and pair with raw timestamps for sorting
+  const reportsWithTimestamps = reviews.map(({ response, filename }) => ({
+    report: transformReviewResponse(response, filename),
+    timestamp: response.metadata?.generatedAt || new Date(0).toISOString(),
+  }))
+
+  // Sort by actual timestamp (most recent first)
+  return reportsWithTimestamps
     .sort((a, b) => {
-      // Sort by timestamp, most recent first
-      // Using the original generatedAt for accurate sorting
-      return b.id.localeCompare(a.id)
+      const timeA = new Date(a.timestamp).getTime()
+      const timeB = new Date(b.timestamp).getTime()
+      return timeB - timeA
     })
+    .map(({ report }) => report)
 }
