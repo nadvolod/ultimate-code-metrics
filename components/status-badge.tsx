@@ -18,6 +18,13 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
     lg: 16,
   }
 
+  // Fallback config for unexpected status values (defensive coding)
+  const defaultBadgeConfig = {
+    label: "Unknown",
+    icon: Circle,
+    className: "bg-muted text-muted-foreground border border-border",
+  }
+
   const config = {
     APPROVE: {
       label: "APPROVE",
@@ -46,7 +53,8 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
     },
   }
 
-  const { label, icon: Icon, className } = config[status]
+  const resolved = config[status] ?? defaultBadgeConfig
+  const { label, icon: Icon, className } = resolved
 
   return (
     <div
