@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowUp, ArrowDown, Info } from "lucide-react"
 
 interface MetricCardProps {
   label: string
@@ -6,17 +6,28 @@ interface MetricCardProps {
   change?: string
   trend?: "up" | "down"
   index?: number
+  tooltip?: string
 }
 
-export function MetricCard({ label, value, change, trend, index = 0 }: MetricCardProps) {
+export function MetricCard({ label, value, change, trend, index = 0, tooltip }: MetricCardProps) {
   return (
     <div
       className="bg-card border border-border rounded-lg p-6 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 animate-slide-up"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            {tooltip && (
+              <div className="group relative">
+                <Info size={14} className="text-muted-foreground/50 cursor-help" />
+                <div className="absolute left-0 top-6 hidden group-hover:block z-10 w-64 p-3 text-xs text-foreground bg-card border border-border rounded-lg shadow-lg">
+                  {tooltip}
+                </div>
+              </div>
+            )}
+          </div>
           <p className="text-3xl font-semibold text-foreground">{value}</p>
         </div>
         {change && trend && (
