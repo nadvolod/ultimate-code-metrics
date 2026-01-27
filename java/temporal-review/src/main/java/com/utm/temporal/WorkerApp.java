@@ -5,6 +5,12 @@ import java.nio.file.Files;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.utm.temporal.activity.CodeQualityActivityImpl;
+import com.utm.temporal.activity.DocumentationQualityActivityImpl;
+import com.utm.temporal.activity.SecurityQualityActivityImpl;
+import com.utm.temporal.activity.TestQualityActivityImpl;
+import com.utm.temporal.agent.CodeQualityAgent;
+import com.utm.temporal.agent.DocumentationAgent;
 import com.utm.temporal.activity.*;
 import com.utm.temporal.agent.ComplexityAgent;
 import com.utm.temporal.agent.CodeQualityAgent;
@@ -77,6 +83,7 @@ public class WorkerApp {
             CodeQualityAgent codeQualityAgent = new CodeQualityAgent();
             TestQualityAgent testQualityAgent = new TestQualityAgent();
             SecurityAgent securityAgent = new SecurityAgent();
+            DocumentationAgent documentationAgent = new DocumentationAgent();
             PriorityAgent priorityAgent = new PriorityAgent();
             ComplexityAgent complexityAgent = new ComplexityAgent();
 
@@ -85,6 +92,7 @@ public class WorkerApp {
                     new CodeQualityActivityImpl(codeQualityAgent),
                     new TestQualityActivityImpl(testQualityAgent),
                     new SecurityQualityActivityImpl(securityAgent),
+                    new DocumentationQualityActivityImpl(documentationAgent));
                     new PriorityActivityImpl(priorityAgent),
                     new ComplexityQualityActivityImpl(complexityAgent));
 

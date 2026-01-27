@@ -12,6 +12,9 @@ package-lock.json
 /build
 /java/temporal-review/target/
 
+# java
+/java/**/target/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

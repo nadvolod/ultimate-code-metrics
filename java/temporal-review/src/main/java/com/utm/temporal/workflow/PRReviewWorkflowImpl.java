@@ -1,6 +1,7 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
+import com.utm.temporal.activity.DocumentationQualityActivity;
 import com.utm.temporal.activity.PriorityActivity;
 import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
@@ -44,6 +45,8 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
     );
+    private final DocumentationQualityActivity documentationQualityActivity = Workflow.newActivityStub(
+            DocumentationQualityActivity.class, ACTIVITY_OPTIONS
     private final PriorityActivity priorityActivity = Workflow.newActivityStub(
             PriorityActivity.class, ACTIVITY_OPTIONS
     );
@@ -90,6 +93,10 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             AgentResult priority = priorityActivity.prioritizeIssues(request, results);
             results.add(priority);
             logger.info("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");
+          
+            logger.info("[6/6] Calling Documentation Agent...");
+            AgentResult docs = documentationQualityActivity.prioritizeIssues(request, results);
+            results.add(docs);
 
             // 6. Aggregate results from all agents
             String overall = aggregate(results);

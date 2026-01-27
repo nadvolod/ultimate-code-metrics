@@ -278,6 +278,12 @@ The `RunReview` CLI uses these exit codes:
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": ["No security vulnerabilities detected"]
+    },
+    {
+      "agentName": "Documentation",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": ["Documentation updates are sufficient for the user-facing changes"]
     }
   ],
   "metadata": {
