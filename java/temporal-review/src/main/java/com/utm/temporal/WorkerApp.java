@@ -72,7 +72,7 @@ public class WorkerApp {
             System.out.println("Worker stopped.");
         }));
 
-        // Start worker (this blocks and polls for tasks)
+        // Start worker (begins polling in background threads; returns immediately)
         factory.start();
 
         System.out.println("Worker started successfully!");
