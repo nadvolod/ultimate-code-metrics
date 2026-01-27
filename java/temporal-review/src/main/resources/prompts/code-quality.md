@@ -37,11 +37,12 @@ Finding requirements (must follow ruleset language):
 
 Output format:
 Respond ONLY with valid JSON matching this exact structure:
+
+```json
 {
 "agentName": "Code Quality",
 "riskLevel": "LOW|MEDIUM|HIGH",
 "recommendation": "APPROVE|REQUEST_CHANGES|BLOCK",
-"findings": [
-"file: <path> | hunk: <@@ ... @@> | rule: <name> | issue: <specific> | evidence: <quote> | fix: <concrete refactor>"
-]
+"findings": ["specific finding 1", "specific finding 2", ...]
 }
+```
