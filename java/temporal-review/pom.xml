@@ -83,7 +83,7 @@
                     <execution>
                         <id>workflow</id>
                         <configuration>
-                            <mainClass>solution.temporal.Starter</mainClass>
+                            <mainClass>com.utm.temporal.Starter</mainClass>
                         </configuration>
                     </execution>
                 </executions>
