@@ -7,6 +7,7 @@ import com.utm.temporal.llm.Message;
 import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.AgentResult;
 import com.utm.temporal.model.TestSummary;
+import com.utm.temporal.util.PromptLoader;
 
 import java.util.Arrays;
 import java.util.List;
@@ -90,35 +91,6 @@ public class TestQualityAgent {
     }
 
     private String buildSystemPrompt(TestSummary testSummary) {
-        return "You are a Test Quality Reviewer analyzing pull request diffs.\n\n" +
-               "Your task is to assess whether the diff is adequately tested.\n\n" +
-               "STRICT RULES:\n" +
-               "1. If tests FAILED (testSummary.passed == false) → BLOCK\n" +
-               "2. If diff introduces new logic, branching, validation, or API behavior WITHOUT tests → REQUEST_CHANGES\n" +
-               "3. If diff appears to be refactor/comments/docs only → APPROVE\n" +
-               "4. If changes affect auth, validation, or error handling WITHOUT tests → REQUEST_CHANGES\n\n" +
-               "Risk Level Guidelines:\n" +
-               "- LOW: Changes are well-tested or don't require new tests\n" +
-               "- MEDIUM: Some new logic without tests, but not critical\n" +
-               "- HIGH: Critical logic (auth, validation, error handling) without tests, or tests failing\n\n" +
-               "IMPORTANT:\n" +
-               "- Your findings MUST include exactly 3 specific, high-value test suggestions\n" +
-               "- Test suggestions should focus on:\n" +
-               "  * Edge cases and boundary conditions\n" +
-               "  * Error handling and failure scenarios\n" +
-               "  * Integration points and data flow\n" +
-               "- Be specific about what to test and why\n\n" +
-               "Respond ONLY with valid JSON matching this exact structure:\n" +
-               "{\n" +
-               "  \"agentName\": \"Test Quality\",\n" +
-               "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
-               "  \"recommendation\": \"APPROVE|REQUEST_CHANGES|BLOCK\",\n" +
-               "  \"findings\": [\n" +
-               "    \"Clear assessment of test coverage\",\n" +
-               "    \"Test Suggestion 1: Specific test case with rationale\",\n" +
-               "    \"Test Suggestion 2: Specific test case with rationale\",\n" +
-               "    \"Test Suggestion 3: Specific test case with rationale\"\n" +
-               "  ]\n" +
-               "}";
+        return PromptLoader.loadPrompt("test-quality");
     }
 }
