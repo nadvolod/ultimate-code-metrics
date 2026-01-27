@@ -71,7 +71,7 @@
                 <configuration>
                     <mainClass>com.utm.temporal.WorkerApp</mainClass>
                 </configuration>
-                               <executions>
+                   <executions>
                     <!-- Run Temporal Worker -->
                     <execution>
                         <id>worker</id>
