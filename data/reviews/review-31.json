@@ -6,7 +6,11 @@
       "riskLevel": "HIGH",
       "recommendation": "BLOCK",
       "findings": [
-        "file: java/temporal-review/src/main/java/com/utm/temporal/util/PromptLoader.java | hunk: @@ -0,0 +1,32 @@ | rule: missing error handling | issue: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. | evidence: 'throw new RuntimeException(\"Prompt file not found: \" + resourcePath);' | fix: Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files."
+        "file: java/temporal-review/src/main/java/com/utm/temporal/util/PromptLoader.java | hunk: @@ -0,0 +1,32 @@ | rule: missing error handling | issue: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. | evidence: 'throw new RuntimeException(\"Prompt file not found: \" + resourcePath);' | fix: Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files.",
+        "The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present.",
+        "Test Suggestion 1: Create a test for the PromptLoader class to ensure it correctly loads markdown files from the resources directory, including edge cases where the file does not exist.",
+        "Test Suggestion 2: Implement tests for each agent class to verify that they correctly utilize the PromptLoader and handle scenarios where the prompt file is missing or cannot be read.",
+        "Test Suggestion 3: Add integration tests to check that the agents produce the expected output when given various inputs, ensuring that the markdown prompts are parsed and utilized correctly."
       ]
     },
     {
@@ -15,9 +19,9 @@
       "recommendation": "BLOCK",
       "findings": [
         "The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present.",
-        "Test Suggestion 1: Create a test for the PromptLoader class to ensure it correctly loads markdown files from the resources directory, including edge cases where the file does not exist.",
-        "Test Suggestion 2: Implement tests for each agent class to verify that they correctly utilize the PromptLoader and handle scenarios where the prompt file is missing or cannot be read.",
-        "Test Suggestion 3: Add integration tests to check that the agents produce the expected output when given various inputs, ensuring that the markdown prompts are parsed and utilized correctly."
+        "Test Suggestion 1: Create a test for the PromptLoader class to ensure it correctly loads markdown files from the resources directory, including edge cases where the file does not exist. This will help verify that the loading mechanism is robust and handles missing files gracefully.",
+        "Test Suggestion 2: Implement tests for each agent class to verify that they correctly utilize the PromptLoader and handle scenarios where the prompt file is missing or cannot be read. This is crucial to ensure that the agents do not fail unexpectedly during execution.",
+        "Test Suggestion 3: Add integration tests to check that the agents produce the expected output when given various inputs, ensuring that the markdown prompts are parsed and utilized correctly. This will help confirm that the refactoring does not alter the expected behavior of the agents."
       ]
     },
     {
@@ -43,14 +47,13 @@
       "riskLevel": "HIGH",
       "recommendation": "BLOCK",
       "findings": [
-        "P0: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. [CodeQuality] - Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files.",
-        "P1: The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present. [TestQuality] - Create tests for the PromptLoader class and each agent class to verify correct functionality and error handling."
+        "P0: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. [Code Quality] - Implement unit tests for PromptLoader and agent classes to ensure proper error handling and functionality."
       ]
     }
   ],
   "metadata": {
-    "generatedAt": "2026-01-27T00:54:51.379Z",
-    "tookMs": 18621,
+    "generatedAt": "2026-01-27T10:03:31.400Z",
+    "tookMs": 22065,
     "model": "gpt-4o-mini"
   },
   "prNumber": 31,
