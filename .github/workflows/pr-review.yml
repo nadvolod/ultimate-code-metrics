@@ -60,9 +60,27 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          mvn -pl temporal-review exec:java \
-            -Dexec.mainClass="com.utm.temporal.WorkerApp" \
+          # Start the Worker in the background
+          echo "Starting Temporal Worker..."
+          mvn -pl temporal-review exec:java@worker > /tmp/worker.log 2>&1 &
+          WORKER_PID=$!
+          echo "Worker started with PID: $WORKER_PID"
+          
+          # Wait for worker to be ready
+          echo "Waiting for worker to be ready..."
+          sleep 10
+          
+          # Run the Starter to submit the workflow
+          echo "Submitting workflow via Starter..."
+          mvn -pl temporal-review exec:java@workflow \
             -Dexec.args="/tmp/review-input.json /tmp/review-output.json"
+          
+          # Kill the worker
+          echo "Stopping worker..."
+          kill $WORKER_PID || true
+          wait $WORKER_PID 2>/dev/null || true
+          
+          echo "Review completed!"
         working-directory: java
 
       - name: Post PR Comment

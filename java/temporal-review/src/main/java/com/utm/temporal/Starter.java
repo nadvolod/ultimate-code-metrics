@@ -43,6 +43,7 @@ public class Starter {
         String inputPath = args[0];
         String outputPath = args[1];
 
+        WorkflowServiceStubs service = null;
         try {
             // Read input JSON
             System.out.println("Reading input from: " + inputPath);
@@ -57,7 +58,7 @@ public class Starter {
 
             // Connect to Temporal server
             System.out.println("Connecting to Temporal server...");
-            WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+            service = WorkflowServiceStubs.newLocalServiceStubs();
             WorkflowClient client = WorkflowClient.newInstance(service);
 
             // Create workflow stub and execute
@@ -82,9 +83,6 @@ public class Starter {
                     .writeValueAsString(response);
             Files.writeString(new File(outputPath).toPath(), outputJson);
 
-            // Cleanup
-            service.shutdown();
-
             System.out.println();
             System.out.println("Review completed successfully!");
             System.out.println("Overall recommendation: " + response.overallRecommendation);
@@ -94,6 +92,11 @@ public class Starter {
             System.err.println("Error executing workflow: " + e.getMessage());
             e.printStackTrace();
             System.exit(2);
+        } finally {
+            // Cleanup gRPC resources
+            if (service != null) {
+                service.shutdown();
+            }
         }
     }
 }
