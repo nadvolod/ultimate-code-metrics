@@ -79,12 +79,5 @@ public class WorkerApp {
         System.out.println("Listening for workflow tasks on queue: " + TASK_QUEUE);
         System.out.println("Press Ctrl+C to stop the worker.");
         System.out.println();
-
-        // Block indefinitely - worker runs until process is terminated
-        try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }
