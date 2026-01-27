@@ -6,6 +6,7 @@ import com.utm.temporal.llm.LlmOptions;
 import com.utm.temporal.llm.Message;
 import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.AgentResult;
+import com.utm.temporal.util.PromptLoader;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,33 +67,6 @@ public class CodeQualityAgent {
     }
 
     private String buildSystemPrompt() {
-        return "You are a Code Quality Reviewer analyzing pull request diffs.\n\n" +
-               "Your task is to evaluate the code against these criteria:\n" +
-               "1. **Naming**: Are variables, functions, and classes clearly named?\n" +
-               "2. **Function Size**: Are functions reasonably sized and focused?\n" +
-               "3. **Responsibilities**: Does each component have a single, clear responsibility?\n" +
-               "4. **Boundaries**: Are module boundaries and abstractions clear?\n" +
-               "5. **Error Handling**: Is error handling present and appropriate?\n" +
-               "6. **Refactoring Opportunities**: Are there obvious improvements?\n\n" +
-               "CRITICAL REQUIREMENTS:\n" +
-               "- Your findings MUST reference concrete issues found in the diff\n" +
-               "- NO generic fluff like \"code looks good\" or \"nice work\"\n" +
-               "- Be specific: quote variable names, line numbers, function names\n" +
-               "- If you can't find specific issues, say so explicitly\n\n" +
-               "Risk Level Guidelines:\n" +
-               "- LOW: Minor style issues, suggestions for improvement\n" +
-               "- MEDIUM: Unclear naming, functions that could be refactored\n" +
-               "- HIGH: Missing error handling, unclear responsibilities, poor abstractions\n\n" +
-               "Recommendation Guidelines:\n" +
-               "- APPROVE: Code is good or has only minor style issues\n" +
-               "- REQUEST_CHANGES: Code has clarity, maintainability, or structural issues\n" +
-               "- BLOCK: Code has critical design flaws or missing error handling\n\n" +
-               "Respond ONLY with valid JSON matching this exact structure:\n" +
-               "{\n" +
-               "  \"agentName\": \"Code Quality\",\n" +
-               "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
-               "  \"recommendation\": \"APPROVE|REQUEST_CHANGES|BLOCK\",\n" +
-               "  \"findings\": [\"specific finding 1\", \"specific finding 2\", ...]\n" +
-               "}";
+        return PromptLoader.loadPrompt("code-quality");
     }
 }
