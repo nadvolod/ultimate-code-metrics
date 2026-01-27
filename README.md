@@ -160,6 +160,65 @@ cat sample-output.json
 3. Find your workflow (ID: `pr-review-<uuid>`)
 4. Inspect execution history, activity results, and timings
 
+## Demonstrating Temporal Durability
+
+This section shows how Temporal workflows survive worker crashes and resume execution automatically.
+
+### Architecture: Separate Worker and Starter
+
+The system is split into two processes:
+- **Worker** (`WorkerApp`): Long-running process that executes workflow tasks
+- **Starter** (`Starter`): Ephemeral process that submits workflows and waits for results
+
+### Step-by-Step Demo
+
+**Terminal 1 - Start Temporal Server:**
+```bash
+temporal server start-dev
+```
+
+**Terminal 2 - Start the Worker:**
+```bash
+cd java/temporal-review
+mvn exec:java@worker
+```
+
+You should see:
+```
+Starting Temporal Worker...
+Task Queue: pr-review
+Connecting to Temporal server at localhost:7233...
+Worker started successfully!
+Listening for workflow tasks on queue: pr-review
+Press Ctrl+C to stop the worker.
+```
+
+**Terminal 3 - Submit a Workflow:**
+```bash
+cd java/temporal-review
+mvn exec:java@workflow -Dexec.args="../../sample-input.json ../../sample-output.json"
+```
+
+**Demonstrate Durability:**
+
+1. While the workflow is running (you'll see activity logs in Terminal 2), **stop the Worker** with `Ctrl+C`
+2. The Starter in Terminal 3 will keep waiting (the workflow is paused, not failed)
+3. Check the Temporal Web UI at http://localhost:8233 - the workflow shows as "Running"
+4. **Restart the Worker** in Terminal 2:
+   ```bash
+   mvn exec:java@worker
+   ```
+5. The workflow **automatically resumes** from where it left off
+6. Completed activities are NOT re-executed (Temporal replays from history)
+7. The Starter receives the final result and writes the output file
+
+### What This Demonstrates
+
+- **Workflow state is durable**: Temporal persists all workflow progress
+- **Activities are not re-executed**: Completed activities replay from history
+- **Workers are stateless**: Any worker can pick up and continue the workflow
+- **No data loss**: The workflow completes successfully despite the interruption
+
 ## Verifying Temporal is Working
 
 ### Method 1: CLI Health Check
