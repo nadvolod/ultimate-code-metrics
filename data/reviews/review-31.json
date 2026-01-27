@@ -1,0 +1,56 @@
+{
+  "overallRecommendation": "BLOCK",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": []
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present.",
+        "Test Suggestion 1: Create a test for the PromptLoader class to ensure it correctly loads markdown files from the resources directory, including edge cases where the file does not exist.",
+        "Test Suggestion 2: Implement tests for each agent class to verify that they correctly utilize the PromptLoader and handle scenarios where the prompt file is missing or cannot be read.",
+        "Test Suggestion 3: Add integration tests to check that the agents produce the expected output when given various inputs, ensuring that the markdown prompts are parsed and utilized correctly."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected"
+      ]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 2",
+        "Cognitive Complexity: 3",
+        "Primary driver: simple method calls with no complex logic"
+      ]
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "P1: The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present. [TestQuality] - Create tests for the PromptLoader class and each agent class to verify functionality and handle edge cases."
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-01-27T00:50:48.883Z",
+    "tookMs": 13654,
+    "model": "gpt-4o-mini"
+  },
+  "prNumber": 31,
+  "prTitle": "move prompts to .md files",
+  "author": "nadvolod"
+}
