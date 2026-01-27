@@ -311,7 +311,7 @@ All objectives met:
 
 - **What if I have no review files?** Dashboard gracefully falls back to mock data with a banner explaining how to generate real data.
 
-- **How do I deploy this?** No special steps needed. Build with `npm run build` and deploy the `.next` folder to your hosting provider.
+- **How do I deploy this?** No special steps needed. Build with `pnpm build` and deploy the `.next` folder to your hosting provider.
 
 ---
 
