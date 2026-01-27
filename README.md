@@ -167,8 +167,8 @@ This section shows how Temporal workflows survive worker crashes and resume exec
 ### Architecture: Separate Worker and Starter
 
 The system is split into two processes:
-- **Worker** (`WorkerApp`): Long-running process that executes workflow tasks
-- **Starter** (`Starter`): Ephemeral process that submits workflows and waits for results
+- **Worker** (`WorkerApp`, run via `mvn exec:java@worker`): Long-running process that executes workflow tasks
+- **Starter** (workflow starter CLI, run via `mvn exec:java@workflow`): Ephemeral process that submits workflows and waits for results
 
 ### Step-by-Step Demo
 
