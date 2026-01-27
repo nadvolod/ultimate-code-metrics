@@ -3,9 +3,11 @@
   "agents": [
     {
       "agentName": "Code Quality",
-      "riskLevel": "LOW",
-      "recommendation": "APPROVE",
-      "findings": []
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "file: java/temporal-review/src/main/java/com/utm/temporal/util/PromptLoader.java | hunk: @@ -0,0 +1,32 @@ | rule: missing error handling | issue: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. | evidence: 'throw new RuntimeException(\"Prompt file not found: \" + resourcePath);' | fix: Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files."
+      ]
     },
     {
       "agentName": "Test Quality",
@@ -41,13 +43,14 @@
       "riskLevel": "HIGH",
       "recommendation": "BLOCK",
       "findings": [
-        "P1: The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present. [TestQuality] - Create tests for the PromptLoader class and each agent class to verify functionality and handle edge cases."
+        "P0: No tests present for PromptLoader and agent classes, which could lead to unhandled exceptions if prompts are missing or cannot be read. [CodeQuality] - Implement unit tests for PromptLoader to ensure it correctly loads prompts and handles missing files.",
+        "P1: The diff introduces new logic through the PromptLoader utility class and the refactoring of agent prompts, but there are no tests present. [TestQuality] - Create tests for the PromptLoader class and each agent class to verify correct functionality and error handling."
       ]
     }
   ],
   "metadata": {
-    "generatedAt": "2026-01-27T00:50:48.883Z",
-    "tookMs": 13654,
+    "generatedAt": "2026-01-27T00:54:51.379Z",
+    "tookMs": 18621,
     "model": "gpt-4o-mini"
   },
   "prNumber": 31,
