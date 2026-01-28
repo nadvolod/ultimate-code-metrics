@@ -36,9 +36,9 @@ RunReview CLI → Temporal Client → PRReviewWorkflow
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
-## Planned QA Agent
+## Planned QA Agent (Test Prioritization)
 
-The QA Agent is intended to reduce production risk by recommending minimal, high-value tests rather than maximizing coverage.
+The QA Agent (distinct from TestQualityAgent) is intended to reduce production risk by recommending minimal, high-value tests rather than maximizing coverage.
 
 ### Behavior
 - Map PR changes to business-critical workflows (payments, auth, onboarding) using ownership metadata and paths.
