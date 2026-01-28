@@ -36,6 +36,39 @@ RunReview CLI → Temporal Client → PRReviewWorkflow
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
+## Product Owner Agent Plan
+
+We need a dedicated agent to triage GitHub issues and keep the backlog prioritized. The plan below outlines how to add this capability without changing the existing PR review workflow.
+
+### Scope & Responsibilities
+- Ingest new issues, comments, and related PR references.
+- Classify issues (bug, feature, docs, tech debt) and recommend priority.
+- Keep labels and milestones up-to-date to reflect the latest priority.
+
+### Inputs
+- GitHub Issues API data: title, body, labels, assignees, comments, timestamps.
+- Repository metadata: open PRs, recent releases, CI failures.
+- Project policy: severity rubric and priority mapping (see Decision Rubric below).
+
+### Decision Rubric
+- **Impact**: customer-facing regression > production error > UX annoyance > cosmetic.
+- **Urgency**: blocking releases, security exposure, or broken CI escalates.
+- **Effort**: prefer quick wins when impact is comparable.
+- **Dependencies**: issues that unblock others move up.
+
+### Workflow
+1. Scheduled run (daily) or on new issue/label events.
+2. Fetch open issues + recent activity.
+3. Classify each issue and compute a priority score.
+4. Apply/adjust labels (e.g., `priority:high`, `type:bug`, `status:needs-triage`).
+5. Post a concise triage comment summarizing the recommendation.
+6. Generate a weekly report of top priorities and stale items.
+
+### Outputs
+- Consistent labels and milestones per issue.
+- A ranked list of top priorities for the week.
+- A triage summary comment for each newly processed issue.
+
 ## Current Folder Structure
 
 ```
