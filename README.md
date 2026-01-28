@@ -36,6 +36,21 @@ RunReview CLI → Temporal Client → PRReviewWorkflow
   → LlmClient (OpenAI) → Review Results (JSON)
 ```
 
+## Planned QA Agent
+
+The QA Agent is intended to reduce production risk by recommending minimal, high-value tests rather than maximizing coverage.
+
+### Behavior
+- Map PR changes to business-critical workflows (payments, auth, onboarding) using ownership metadata and paths.
+- Identify risk signals (no tests touched, high diff churn, complexity spikes, security findings) and prioritize tests accordingly.
+- Propose the smallest set of tests that protect critical flows (unit, integration, smoke), avoiding low-value coverage.
+- Emit actionable test suggestions with scope, rationale, and confidence to support fast review decisions.
+
+### When It Runs
+- Triggered during PR review when changes touch critical paths or risk thresholds are exceeded.
+- Skipped for low-risk docs-only or trivial changes unless coverage regression is detected.
+- Can be scheduled nightly to backfill missing test coverage on high-traffic areas.
+
 ## Current Folder Structure
 
 ```
