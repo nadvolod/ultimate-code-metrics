@@ -1,6 +1,7 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.CodeQualityActivity;
+import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.activity.PriorityActivity;
 import com.utm.temporal.activity.ComplexityQualityActivity;
 import com.utm.temporal.activity.SecurityQualityActivity;
@@ -100,7 +101,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             Metadata metadata = new Metadata(
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
-                    "gpt-4o-mini"
+                    OpenAiLlmClient.DEFAULT_MODEL
             );
 
             ReviewResponse response = new ReviewResponse(

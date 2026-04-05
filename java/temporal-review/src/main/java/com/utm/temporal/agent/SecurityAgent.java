@@ -50,7 +50,7 @@ public class SecurityAgent {
             );
 
             LlmOptions options = new LlmOptions(
-                System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+                System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL),
                 0.1,  // Very low temperature for consistent security analysis
                 "json_object"
             );
