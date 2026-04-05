@@ -56,8 +56,9 @@ This reads from `src/main/resources/prompts/code-quality.md` and returns the con
 
 After editing a prompt:
 
-1. **No recompilation needed** - Changes are picked up immediately
-2. **Run tests** to verify the agent still works:
+1. **In IDE development** - Changes may be picked up immediately (depends on IDE hot-reload)
+2. **For packaged deployments** - Run `mvn clean compile` to include changes in the JAR
+3. **Run tests** to verify the agent still works:
    ```bash
    cd java
    mvn -pl temporal-review test
@@ -126,14 +127,14 @@ What the agent looks for:
 
 ## Response Format
 
-` `` json
+```json
 {
   "agentName": "Agent Name",
   "riskLevel": "LOW|MEDIUM|HIGH",
   "recommendation": "APPROVE|REQUEST_CHANGES|BLOCK",
   "findings": ["finding 1", "finding 2", ...]
 }
-` ``
+```
 ```
 
 ## Version Control Best Practices

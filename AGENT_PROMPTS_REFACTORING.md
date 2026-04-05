@@ -108,8 +108,8 @@ Use proper markdown formatting:
 - Code blocks for JSON examples
 - Lists for criteria
 
-### 3. No compilation needed!
-Changes are picked up immediately on next agent execution.
+### 3. Rebuild for packaged deployments
+During IDE development, changes may be picked up immediately. For packaged JAR deployments, run `mvn clean compile` to include updated prompts.
 
 ### 4. Test (optional)
 ```bash
@@ -208,6 +208,6 @@ Full documentation in:
 - **162 lines removed** - Cleaner Java code
 - **6 markdown files** - Readable, maintainable prompts
 - **Compilation successful** - Ready for production
-- **Zero breaking changes** - Functionally identical
+- **Prompt content updated** - Enhanced prompts with clearer structure and rules
 
 **Result:** Prompts are now 10x easier to read, edit, and collaborate on!
