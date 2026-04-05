@@ -50,7 +50,7 @@ public class CodeQualityAgent {
             );
 
             LlmOptions options = new LlmOptions(
-                System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+                System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL),
                 0.2,  // Low temperature for consistent, focused analysis
                 "json_object"
             );
