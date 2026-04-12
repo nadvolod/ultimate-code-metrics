@@ -1,10 +1,6 @@
 package com.utm.temporal.workflow;
 
-import com.utm.temporal.activity.CodeQualityActivity;
-import com.utm.temporal.activity.PriorityActivity;
-import com.utm.temporal.activity.ComplexityQualityActivity;
-import com.utm.temporal.activity.SecurityQualityActivity;
-import com.utm.temporal.activity.TestQualityActivity;
+import com.utm.temporal.activity.*;
 import com.utm.temporal.model.AgentResult;
 import com.utm.temporal.model.Metadata;
 import com.utm.temporal.model.ReviewRequest;
@@ -46,6 +42,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     );
     private final PriorityActivity priorityActivity = Workflow.newActivityStub(
             PriorityActivity.class, ACTIVITY_OPTIONS
+    );
+    private final OutcomeRecordingActivity outcomeRecordingActivity = Workflow.newActivityStub(
+            OutcomeRecordingActivity.class, ACTIVITY_OPTIONS
     );
 
     @Override
@@ -93,6 +92,8 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
             // 6. Aggregate results from all agents
             String overall = aggregate(results);
+
+            outcomeRecordingActivity.recordReviewOutcome(overall);
 
             // 7. Build response
             long tookMs = Workflow.currentTimeMillis() - startMs;
