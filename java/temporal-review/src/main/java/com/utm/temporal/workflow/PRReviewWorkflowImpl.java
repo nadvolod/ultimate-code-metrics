@@ -4,6 +4,7 @@ import com.utm.temporal.activity.*;
 import com.utm.temporal.model.AgentResult;
 import com.utm.temporal.model.Metadata;
 import com.utm.temporal.model.ReviewRequest;
+import com.utm.temporal.model.ReviewOutcome;
 import com.utm.temporal.model.ReviewResponse;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -93,10 +94,29 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             // 6. Aggregate results from all agents
             String overall = aggregate(results);
 
-            outcomeRecordingActivity.recordReviewOutcome(overall);
-
             // 7. Build response
             long tookMs = Workflow.currentTimeMillis() - startMs;
+
+            // Record outcome to DB (failure here never breaks the review)
+            if (request.repository != null) {
+                try {
+                    ReviewOutcome outcome = new ReviewOutcome();
+                    outcome.reviewId = Workflow.getInfo().getWorkflowId();
+                    outcome.repository = request.repository;
+                    outcome.prNumber = request.prNumber;
+                    outcome.prTitle = request.prTitle;
+                    outcome.prDescription = request.prDescription;
+                    outcome.author = request.author;
+                    outcome.systemRecommendation = overall;
+                    outcome.agentResults = results;
+                    outcome.tookMs = tookMs;
+                    outcome.model = "gpt-4o-mini";
+                    outcome.learningVersion = 0;
+                    outcomeRecordingActivity.recordReviewOutcome(outcome);
+                } catch (Exception e) {
+                    logger.warn("Failed to record review outcome: " + e.getMessage());
+                }
+            }
 
             Metadata metadata = new Metadata(
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),

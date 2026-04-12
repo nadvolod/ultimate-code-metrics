@@ -10,6 +10,7 @@ public class ReviewRequest {
     public String author;     // PR author
     public String diff;
     public TestSummary testSummary;  // Optional
+    public String repository;        // Optional: "owner/repo" for learning context
 
     // No-arg constructor required for Jackson deserialization
     public ReviewRequest() {}
