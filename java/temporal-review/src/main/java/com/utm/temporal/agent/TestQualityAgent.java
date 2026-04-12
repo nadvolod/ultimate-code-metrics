@@ -30,7 +30,7 @@ public class TestQualityAgent {
         this.objectMapper = new ObjectMapper();
     }
 
-    public AgentResult analyze(String prTitle, String prDescription, String diff, TestSummary testSummary) {
+    public AgentResult analyze(String prTitle, String prDescription, String diff, TestSummary testSummary, String learningContext) {
         try {
             // If testSummary is null, create a default one
             if (testSummary == null) {
@@ -51,8 +51,8 @@ public class TestQualityAgent {
                 );
             }
 
-            // Build system prompt with rules
-            String systemPrompt = buildSystemPrompt(testSummary);
+            // Build system prompt with rules + optional learning context
+            String systemPrompt = buildSystemPrompt(testSummary) + (learningContext != null ? learningContext : "");
 
             // Build user prompt with PR details
             String userPrompt = String.format(
@@ -87,6 +87,10 @@ public class TestQualityAgent {
             // Fail fast - no retry logic!
             throw new RuntimeException("Test Quality Agent failed: " + e.getMessage(), e);
         }
+    }
+
+    public AgentResult analyze(String prTitle, String prDescription, String diff, TestSummary testSummary) {
+        return analyze(prTitle, prDescription, diff, testSummary, null);
     }
 
     private String buildSystemPrompt(TestSummary testSummary) {

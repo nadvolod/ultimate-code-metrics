@@ -313,6 +313,81 @@ public class DatabaseClient {
     }
 
     // ============================================================
+    // Learning Aggregation Queries (Phase 4)
+    // ============================================================
+
+    public Map<String, AgentAccuracy> computeAgentAccuracy(String repository) throws SQLException {
+        String sql = "SELECT f.agent_name, " +
+                     "COUNT(*) AS total, " +
+                     "COUNT(*) FILTER (WHERE fo.disposition = 'ACCEPTED') AS accepted, " +
+                     "COUNT(*) FILTER (WHERE fo.disposition = 'DISMISSED') AS dismissed, " +
+                     "COUNT(*) FILTER (WHERE fo.disposition = 'DEFERRED') AS deferred " +
+                     "FROM findings f " +
+                     "JOIN review_runs rr ON f.review_run_id = rr.id " +
+                     "JOIN pull_requests pr ON rr.pull_request_id = pr.id " +
+                     "JOIN finding_outcomes fo ON f.id = fo.finding_id " +
+                     "WHERE pr.repository = ? AND fo.disposition != 'UNKNOWN' " +
+                     "GROUP BY f.agent_name";
+        Map<String, AgentAccuracy> stats = new HashMap<>();
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                AgentAccuracy a = new AgentAccuracy();
+                a.agentName = rs.getString("agent_name");
+                a.totalFindings = rs.getInt("total");
+                a.acceptedFindings = rs.getInt("accepted");
+                a.dismissedFindings = rs.getInt("dismissed");
+                a.deferredFindings = rs.getInt("deferred");
+                int denominator = a.acceptedFindings + a.dismissedFindings;
+                a.precisionRate = denominator > 0 ? (double) a.acceptedFindings / denominator : 0.0;
+                stats.put(a.agentName, a);
+            }
+        }
+        return stats;
+    }
+
+    public List<FindingOutcome> loadAllFindingsWithOutcomes(String repository) throws SQLException {
+        String sql = "SELECT f.agent_name, f.finding_text, f.risk_level, fo.disposition, fo.evidence " +
+                     "FROM findings f " +
+                     "JOIN review_runs rr ON f.review_run_id = rr.id " +
+                     "JOIN pull_requests pr ON rr.pull_request_id = pr.id " +
+                     "JOIN finding_outcomes fo ON f.id = fo.finding_id " +
+                     "WHERE pr.repository = ? AND fo.disposition != 'UNKNOWN' " +
+                     "ORDER BY f.agent_name, fo.disposition";
+        List<FindingOutcome> findings = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                FindingOutcome fo = new FindingOutcome();
+                fo.agentName = rs.getString("agent_name");
+                fo.finding = rs.getString("finding_text");
+                fo.riskLevel = rs.getString("risk_level");
+                fo.disposition = rs.getString("disposition");
+                fo.evidence = rs.getString("evidence");
+                findings.add(fo);
+            }
+        }
+        return findings;
+    }
+
+    public int countReviewsForRepo(String repository) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM review_runs rr " +
+                     "JOIN pull_requests pr ON rr.pull_request_id = pr.id " +
+                     "WHERE pr.repository = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    // ============================================================
     // Learning Proposals (Phase 4)
     // ============================================================
 

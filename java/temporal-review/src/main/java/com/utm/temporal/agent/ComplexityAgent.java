@@ -28,9 +28,9 @@ public class ComplexityAgent {
         this.objectMapper = new ObjectMapper();
     }
 
-    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+    public AgentResult analyze(String prTitle, String prDescription, String diff, String learningContext) {
         try {
-            String systemPrompt = buildSystemPrompt();
+            String systemPrompt = buildSystemPrompt() + (learningContext != null ? learningContext : "");
 
             String userPrompt = String.format(
                 "PR Title: %s\n\nPR Description: %s\n\nDiff:\n%s",
@@ -57,6 +57,10 @@ public class ComplexityAgent {
         } catch (Exception e) {
             throw new RuntimeException("Complexity Agent failed: " + e.getMessage(), e);
         }
+    }
+
+    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+        return analyze(prTitle, prDescription, diff, null);
     }
 
     private String buildSystemPrompt() {

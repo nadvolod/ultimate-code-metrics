@@ -1,11 +1,8 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.*;
-import com.utm.temporal.model.AgentResult;
-import com.utm.temporal.model.Metadata;
-import com.utm.temporal.model.ReviewRequest;
-import com.utm.temporal.model.ReviewOutcome;
-import com.utm.temporal.model.ReviewResponse;
+import com.utm.temporal.learning.HeuristicsEngine;
+import com.utm.temporal.model.*;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
@@ -47,6 +44,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private final OutcomeRecordingActivity outcomeRecordingActivity = Workflow.newActivityStub(
             OutcomeRecordingActivity.class, ACTIVITY_OPTIONS
     );
+    private final LoadInsightsActivity loadInsightsActivity = Workflow.newActivityStub(
+            LoadInsightsActivity.class, ACTIVITY_OPTIONS
+    );
 
     @Override
     public ReviewResponse review(ReviewRequest request) {
@@ -58,30 +58,57 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         logger.info("=".repeat(60));
 
         try {
+            // Step 0: Load learning insights (null if none exist yet)
+            LearningInsights insights = null;
+            if (request.repository != null) {
+                try {
+                    insights = loadInsightsActivity.loadInsights(request.repository);
+                    if (insights != null) {
+                        logger.info("Loaded learning insights v" + insights.learningVersion);
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to load insights, proceeding without: " + e.getMessage());
+                }
+            }
+
+            // Build prompt context from approved patches (empty string if no insights)
+            List<PromptPatch> patches = insights != null && insights.activePromptPatches != null
+                    ? insights.activePromptPatches : new ArrayList<>();
+            String codeQualityContext = HeuristicsEngine.buildPromptContext(patches, "Code Quality");
+            String testQualityContext = HeuristicsEngine.buildPromptContext(patches, "Test Quality");
+            String securityContext = HeuristicsEngine.buildPromptContext(patches, "Security");
+            String complexityContext = HeuristicsEngine.buildPromptContext(patches, "Complexity");
+
+            HeuristicsEngine heuristicsEngine = new HeuristicsEngine(insights);
+
             // Collect all agent results in a list
             List<AgentResult> results = new ArrayList<>();
 
             // 1. Call Code Quality Agent
             logger.info("[1/5] Calling Code Quality Agent...");
             AgentResult codeQuality = codeQualityActivity.analyze(request);
+            codeQuality = heuristicsEngine.apply(codeQuality, request.diff);
             results.add(codeQuality);
             logger.info("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
             // 2. Call Test Quality Agent
             logger.info("[2/5] Calling Test Quality Agent...");
             AgentResult testQuality = testQualityActivity.analyze(request);
+            testQuality = heuristicsEngine.apply(testQuality, request.diff);
             results.add(testQuality);
             logger.info("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
             // 3. Call Security Agent
             logger.info("[3/5] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(request);
+            security = heuristicsEngine.apply(security, request.diff);
             results.add(security);
             logger.info("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
             // 4. Call Complexity Agent
             logger.info("[4/5] Calling Complexity Agent...");
             AgentResult complexity = complexityQualityActivity.analyze(request);
+            complexity = heuristicsEngine.apply(complexity, request.diff);
             results.add(complexity);
             logger.info("      → " + complexity.recommendation + " (Risk: " + complexity.riskLevel + ")");
 
@@ -111,7 +138,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                     outcome.agentResults = results;
                     outcome.tookMs = tookMs;
                     outcome.model = "gpt-4o-mini";
-                    outcome.learningVersion = 0;
+                    outcome.learningVersion = insights != null ? insights.learningVersion : 0;
                     outcomeRecordingActivity.recordReviewOutcome(outcome);
                 } catch (Exception e) {
                     logger.warn("Failed to record review outcome: " + e.getMessage());
