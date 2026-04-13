@@ -22,8 +22,9 @@ jobs:
         run: cd java && mvn compile -pl temporal-review -q
 
       - name: Apply learning proposals
-        run: |
-          cd java/temporal-review
-          mvn exec:java -Dexec.mainClass="com.utm.temporal.ApplyLearning" -Dexec.args="${{ github.repository }}"
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+        run: |
+          cd java/temporal-review
+          mvn exec:java -Dexec.mainClass="com.utm.temporal.ApplyLearning" -Dexec.args="$GITHUB_REPOSITORY_NAME"
