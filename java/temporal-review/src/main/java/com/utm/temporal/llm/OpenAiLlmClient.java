@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -18,11 +19,17 @@ public class OpenAiLlmClient implements LlmClient {
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
+    /** Default maximum number of characters allowed in a user message (diff) before truncation. */
+    public static final int DEFAULT_MAX_DIFF_CHARS = 100_000;
+    private static final String TRUNCATION_NOTICE =
+            "\n\n[TRUNCATED: Diff exceeded the configured size limit. Analysis is based on the first %d characters only.]";
+
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String baseUrl;
     private final boolean dummyMode;
+    private final int maxDiffChars;
 
     public OpenAiLlmClient() {
         this.objectMapper = new ObjectMapper();
@@ -37,9 +44,32 @@ public class OpenAiLlmClient implements LlmClient {
         this.baseUrl = System.getenv().getOrDefault("OPENAI_BASE_URL", DEFAULT_BASE_URL);
         this.dummyMode = "true".equalsIgnoreCase(System.getenv().getOrDefault("DUMMY_MODE", "false"));
 
+        String maxDiffCharsEnv = System.getenv().getOrDefault("MAX_DIFF_CHARS", String.valueOf(DEFAULT_MAX_DIFF_CHARS));
+        try {
+            this.maxDiffChars = Integer.parseInt(maxDiffCharsEnv);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("MAX_DIFF_CHARS environment variable must be a valid integer, got: " + maxDiffCharsEnv);
+        }
+        if (this.maxDiffChars <= 0) {
+            throw new IllegalStateException("MAX_DIFF_CHARS environment variable must be a positive integer, got: " + this.maxDiffChars);
+        }
+
         if (!dummyMode && apiKey.isEmpty()) {
             throw new IllegalStateException("OPENAI_API_KEY environment variable is required when DUMMY_MODE is not enabled");
         }
+    }
+
+    /** Package-private constructor for unit testing with a custom diff size limit. */
+    OpenAiLlmClient(int maxDiffChars) {
+        if (maxDiffChars <= 0) {
+            throw new IllegalArgumentException("maxDiffChars must be a positive integer, got: " + maxDiffChars);
+        }
+        this.objectMapper = new ObjectMapper();
+        this.httpClient = null;
+        this.apiKey = "";
+        this.baseUrl = DEFAULT_BASE_URL;
+        this.dummyMode = true;
+        this.maxDiffChars = maxDiffChars;
     }
 
     @Override
@@ -49,8 +79,11 @@ public class OpenAiLlmClient implements LlmClient {
         }
 
         try {
+            // Truncate user message content that exceeds the configured diff size limit
+            List<Message> effectiveMessages = applyDiffSizeLimit(messages);
+
             // Build request JSON
-            String requestBody = buildRequestBody(messages, options);
+            String requestBody = buildRequestBody(effectiveMessages, options);
 
             // Make HTTP call to OpenAI
             Request request = new Request.Builder()
@@ -72,6 +105,35 @@ public class OpenAiLlmClient implements LlmClient {
             // No retry logic - fail fast!
             throw new RuntimeException("OpenAI API call failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Returns a copy of the message list with user message content truncated to
+     * {@code maxDiffChars} characters. A truncation notice is appended so the LLM
+     * knows the input was cut off.
+     */
+    List<Message> applyDiffSizeLimit(List<Message> messages) {
+        List<Message> result = new ArrayList<>(messages.size());
+        for (Message msg : messages) {
+            if ("user".equals(msg.role) && msg.content != null && msg.content.length() > maxDiffChars) {
+                String truncated = truncateDiff(msg.content, maxDiffChars);
+                result.add(new Message(msg.role, truncated));
+            } else {
+                result.add(msg);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Truncates {@code content} to at most {@code maxChars} characters and appends a
+     * notice explaining the truncation. Visible for testing.
+     */
+    static String truncateDiff(String content, int maxChars) {
+        if (content == null || content.length() <= maxChars) {
+            return content;
+        }
+        return content.substring(0, maxChars) + String.format(TRUNCATION_NOTICE, maxChars);
     }
 
     private String buildRequestBody(List<Message> messages, LlmOptions options) throws IOException {
