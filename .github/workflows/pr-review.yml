@@ -45,14 +45,20 @@ jobs:
         working-directory: java
 
       - name: Generate review input
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           chmod +x scripts/generate-review-input.sh
           ./scripts/generate-review-input.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.event.pull_request.title }}" \
-            "${{ github.event.pull_request.user.login }}" \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}" \
+            "$PR_NUMBER" \
+            "$PR_TITLE" \
+            "$PR_AUTHOR" \
+            "$PR_BASE_SHA" \
+            "$PR_HEAD_SHA" \
             /tmp/review-input.json
         working-directory: ${{ github.workspace }}
 
@@ -73,23 +79,83 @@ jobs:
             const output = JSON.parse(fs.readFileSync('/tmp/review-output.json', 'utf8'));
             const marker = '<!-- UTM_AI_REVIEW -->';
 
-            // Format the comment body
-            let body = marker + '\n# 🤖 Ultimate Code Metrics Review\n\n';
-            body += `**Recommendation:** ${output.overallRecommendation}\n\n`;
+            // --- Emoji mappings ---
+            const agentIcons = {
+              'Code Quality': '🔍', 'CodeQuality': '🔍',
+              'Test Quality': '🧪', 'TestQuality': '🧪',
+              'Security': '🔒',
+              'Complexity': '📐',
+              'Priority': '🎯',
+            };
+            const riskEmoji = { HIGH: '🔴', MEDIUM: '🟡', LOW: '🟢' };
+            const recEmoji  = { BLOCK: '🔴', REQUEST_CHANGES: '🟡', APPROVE: '🟢' };
+            const verdictCallout = { APPROVE: 'TIP', REQUEST_CHANGES: 'WARNING', BLOCK: 'CAUTION' };
+            const verdictLabel  = { APPROVE: 'Approved', REQUEST_CHANGES: 'Changes Requested', BLOCK: 'Blocked' };
 
-            for (const agent of output.agents) {
-              body += `### ${agent.agentName}\n`;
-              body += `Risk: ${agent.riskLevel} | ${agent.recommendation}\n`;
-              for (const finding of agent.findings) {
-                body += `- ${finding}\n`;
-              }
-              body += '\n';
+            function icon(name) { return agentIcons[name] || '📋'; }
+
+            function fmtTime(iso) {
+              if (!iso) return 'N/A';
+              try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+              catch { return iso; }
             }
 
-            body += '\n---\n';
-            body += '📊 [View in Dashboard](https://v0-ultimatetestmetrics.vercel.app/dashboard)\n';
+            function fmtDur(ms) {
+              if (!ms && ms !== 0) return 'N/A';
+              return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+            }
 
-            // Find existing comment or create new
+            // --- Build comment ---
+            const overall = output.overallRecommendation || 'REQUEST_CHANGES';
+            const agents = output.agents || [];
+            const meta = output.metadata || {};
+            const L = [];
+
+            // Verdict banner
+            L.push(marker, '');
+            L.push(`> [!${verdictCallout[overall] || 'NOTE'}]`);
+            L.push(`> ## Ultimate Code Metrics Review`);
+            L.push(`> **Verdict: ${verdictLabel[overall] || overall}** ${recEmoji[overall] || ''}`);
+            L.push('');
+
+            // Summary table
+            L.push('### Walkthrough', '');
+            L.push('| Agent | Risk | Recommendation | Findings |');
+            L.push('|:------|:----:|:--------------:|:--------:|');
+            for (const a of agents) {
+              const f = (a.findings || []).length;
+              L.push(`| ${icon(a.agentName)} ${a.agentName} | ${riskEmoji[a.riskLevel] || ''} ${a.riskLevel || 'N/A'} | ${recEmoji[a.recommendation] || ''} ${a.recommendation || 'N/A'} | ${f} |`);
+            }
+            L.push('', '---', '');
+
+            // Collapsible details per agent
+            for (const a of agents) {
+              const findings = a.findings || [];
+              const count = findings.length === 1 ? '1 finding' : `${findings.length} findings`;
+              L.push(`<details>`);
+              L.push(`<summary>${icon(a.agentName)} <strong>${a.agentName}</strong> — ${riskEmoji[a.riskLevel] || ''} ${a.riskLevel || 'N/A'} risk · ${count}</summary>`);
+              L.push('');
+              L.push(`> **Recommendation:** ${recEmoji[a.recommendation] || ''} ${a.recommendation || 'N/A'}`);
+              L.push('');
+              if (findings.length === 0) {
+                L.push('_No findings._');
+              } else {
+                for (const f of findings) { L.push(`- ${f}`); }
+              }
+              L.push('', '</details>', '');
+            }
+
+            // Footer
+            L.push('---', '');
+            L.push(
+              `<sub>Generated by <strong>Ultimate Code Metrics</strong> at ${fmtTime(meta.generatedAt)} · ` +
+              `Took ${fmtDur(meta.tookMs)} · Model: ${meta.model || 'unknown'} · ` +
+              `<a href="https://v0-ultimatetestmetrics.vercel.app/dashboard">📊 Dashboard</a></sub>`
+            );
+
+            const body = L.join('\n');
+
+            // --- Find existing comment or create new ---
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -115,16 +181,20 @@ jobs:
             }
 
       - name: Persist Review to Dashboard
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          # Add PR metadata to the review output
-          jq --arg pr "${{ github.event.pull_request.number }}" \
-             --arg title "${{ github.event.pull_request.title }}" \
-             --arg author "${{ github.event.pull_request.user.login }}" \
+          jq --arg pr "$PR_NUMBER" \
+             --arg title "$PR_TITLE" \
+             --arg author "$PR_AUTHOR" \
              '. + {prNumber: ($pr | tonumber), prTitle: $title, author: $author}' \
-             /tmp/review-output.json > data/reviews/review-${{ github.event.pull_request.number }}.json
+             /tmp/review-output.json > "data/reviews/review-${PR_NUMBER}.json"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/reviews/review-${{ github.event.pull_request.number }}.json
-          git commit -m "chore: add review data for PR #${{ github.event.pull_request.number }}"
-          git push origin HEAD:${{ github.head_ref }}
+          git add "data/reviews/review-${PR_NUMBER}.json"
+          git commit -m "chore: add review data for PR #${PR_NUMBER}"
+          git push origin "HEAD:${HEAD_REF}"
