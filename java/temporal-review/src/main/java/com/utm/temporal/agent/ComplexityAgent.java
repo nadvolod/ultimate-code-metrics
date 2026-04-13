@@ -53,7 +53,10 @@ public class ComplexityAgent {
 
             String response = llmClient.chat(messages, options);
 
-            return objectMapper.readValue(response, AgentResult.class);
+            AgentResult result = objectMapper.readValue(response, AgentResult.class);
+            result.promptTokens = llmClient.getLastPromptTokens();
+            result.completionTokens = llmClient.getLastCompletionTokens();
+            return result;
 
         } catch (Exception e) {
             throw new RuntimeException("Complexity Agent failed: " + e.getMessage(), e);

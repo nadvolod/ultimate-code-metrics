@@ -10,6 +10,8 @@ public class AgentResult {
     public String riskLevel;        // "LOW", "MEDIUM", "HIGH"
     public String recommendation;   // "APPROVE", "REQUEST_CHANGES", "BLOCK"
     public List<String> findings;
+    public int promptTokens;        // Tokens used for input
+    public int completionTokens;    // Tokens used for output
 
     // No-arg constructor required for Jackson deserialization
     public AgentResult() {}

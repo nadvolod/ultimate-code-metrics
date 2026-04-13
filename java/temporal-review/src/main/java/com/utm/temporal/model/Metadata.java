@@ -4,9 +4,12 @@ package com.utm.temporal.model;
  * Metadata about the review execution.
  */
 public class Metadata {
-    public String generatedAt;  // ISO-8601 timestamp
-    public long tookMs;         // Execution duration in milliseconds
-    public String model;        // LLM model used (e.g., "gpt-4")
+    public String generatedAt;      // ISO-8601 timestamp
+    public long tookMs;             // Execution duration in milliseconds
+    public String model;            // LLM model used (e.g., "gpt-4")
+    public int totalPromptTokens;   // Sum of prompt tokens across all agents
+    public int totalCompletionTokens; // Sum of completion tokens across all agents
+    public Double estimatedCost;    // Estimated cost in USD; null when not computed
 
     // No-arg constructor required for Jackson deserialization
     public Metadata() {}
