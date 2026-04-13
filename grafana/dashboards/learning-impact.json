@@ -1,0 +1,43 @@
+{
+  "dashboard": {
+    "title": "Learning Impact",
+    "tags": ["learning-agent"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "title": "Version Deltas — Did Learning Improve Outcomes?",
+        "type": "table",
+        "gridPos": {"h": 12, "w": 24, "x": 0, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT from_version, to_version, metric_name, ROUND(from_value::numeric, 3) AS from_val, ROUND(to_value::numeric, 3) AS to_val, ROUND(delta::numeric, 3) AS delta, CASE WHEN improvement THEN '✓' ELSE '✗' END AS improved FROM learning_version_deltas WHERE repository = '$repository' ORDER BY to_version DESC, metric_name",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Accepted Finding Rate by Version",
+        "type": "barchart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [{
+          "rawSql": "SELECT 'v' || learning_version AS version, accepted_finding_rate FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY learning_version",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "False Positive Rate by Version",
+        "type": "barchart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [{
+          "rawSql": "SELECT 'v' || learning_version AS version, false_positive_rate FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY learning_version",
+          "format": "table"
+        }]
+      }
+    ],
+    "templating": {
+      "list": [{
+        "name": "repository",
+        "type": "query",
+        "query": "SELECT DISTINCT repository FROM learning_version_deltas"
+      }]
+    }
+  }
+}

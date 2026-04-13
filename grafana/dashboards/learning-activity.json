@@ -1,0 +1,70 @@
+{
+  "dashboard": {
+    "title": "Learning Activity",
+    "tags": ["learning-agent"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "title": "Current Learning Version",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT MAX(version) AS value FROM learning_versions WHERE repository = '$repository'",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Active Heuristics",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT COUNT(*) AS value FROM learned_heuristics WHERE repository = '$repository' AND status = 'APPROVED'",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Active Prompt Patches",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT COUNT(*) AS value FROM prompt_patch_suggestions WHERE repository = '$repository' AND status = 'APPROVED'",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Total Reviews Analyzed",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT COUNT(*) AS value FROM review_runs rr JOIN pull_requests pr ON rr.pull_request_id = pr.id WHERE pr.repository = '$repository'",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Heuristics (Proposed / Approved / Rejected)",
+        "type": "table",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 4},
+        "targets": [{
+          "rawSql": "SELECT heuristic_type, agent_name, description, status, proposed_at FROM learned_heuristics WHERE repository = '$repository' ORDER BY proposed_at DESC LIMIT 20",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Prompt Patches",
+        "type": "table",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 14},
+        "targets": [{
+          "rawSql": "SELECT agent_name, patch_type, description, status, proposed_at FROM prompt_patch_suggestions WHERE repository = '$repository' ORDER BY proposed_at DESC LIMIT 20",
+          "format": "table"
+        }]
+      }
+    ],
+    "templating": {
+      "list": [{
+        "name": "repository",
+        "type": "query",
+        "query": "SELECT DISTINCT repository FROM learning_versions"
+      }]
+    }
+  }
+}

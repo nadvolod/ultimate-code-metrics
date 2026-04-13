@@ -1,0 +1,37 @@
+{
+  "overallRecommendation" : "APPROVE",
+  "agents" : [ {
+    "agentName" : "Code Quality",
+    "riskLevel" : "LOW",
+    "recommendation" : "APPROVE",
+    "findings" : [ "Function names are clear and descriptive", "Code follows single responsibility principle", "Error handling is present and appropriate" ]
+  }, {
+    "agentName" : "Test Quality",
+    "riskLevel" : "LOW",
+    "recommendation" : "APPROVE",
+    "findings" : [ "Tests cover main functionality", "Edge cases are tested", "Test names are descriptive" ]
+  }, {
+    "agentName" : "Security",
+    "riskLevel" : "LOW",
+    "recommendation" : "APPROVE",
+    "findings" : [ "No hardcoded secrets detected", "Input validation is present", "No SQL injection vulnerabilities found" ]
+  }, {
+    "agentName" : "Complexity",
+    "riskLevel" : "LOW",
+    "recommendation" : "APPROVE",
+    "findings" : [ "Cyclomatic Complexity: 12", "Cognitive Complexity: 18", "Primary driver: nested conditionals in request validation" ]
+  }, {
+    "agentName" : "Code Quality",
+    "riskLevel" : "LOW",
+    "recommendation" : "APPROVE",
+    "findings" : [ "Function names are clear and descriptive", "Code follows single responsibility principle", "Error handling is present and appropriate" ]
+  } ],
+  "metadata" : {
+    "generatedAt" : "2026-04-13T00:10:20.423Z",
+    "tookMs" : 1341,
+    "model" : "gpt-4o-mini"
+  },
+  "prNumber" : 42,
+  "prTitle" : "Add user authentication feature",
+  "author" : "sarah.dev"
+}

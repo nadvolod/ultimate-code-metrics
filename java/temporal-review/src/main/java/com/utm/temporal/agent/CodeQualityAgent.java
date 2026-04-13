@@ -30,10 +30,10 @@ public class CodeQualityAgent {
         this.objectMapper = new ObjectMapper();
     }
 
-    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+    public AgentResult analyze(String prTitle, String prDescription, String diff, String learningContext) {
         try {
-            // Build system prompt with criteria
-            String systemPrompt = buildSystemPrompt();
+            // Build system prompt with criteria + optional learning context
+            String systemPrompt = buildSystemPrompt() + (learningContext != null ? learningContext : "");
 
             // Build user prompt with PR details
             String userPrompt = String.format(
@@ -64,6 +64,10 @@ public class CodeQualityAgent {
             // Fail fast - no retry logic!
             throw new RuntimeException("Code Quality Agent failed: " + e.getMessage(), e);
         }
+    }
+
+    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+        return analyze(prTitle, prDescription, diff, null);
     }
 
     private String buildSystemPrompt() {

@@ -11,6 +11,7 @@ import com.utm.temporal.agent.CodeQualityAgent;
 import com.utm.temporal.agent.PriorityAgent;
 import com.utm.temporal.agent.SecurityAgent;
 import com.utm.temporal.agent.TestQualityAgent;
+import com.utm.temporal.db.DatabaseClient;
 import com.utm.temporal.model.ReviewRequest;
 import com.utm.temporal.model.ReviewResponse;
 import com.utm.temporal.workflow.PRReviewWorkflow;
@@ -60,6 +61,7 @@ public class WorkerApp {
             String inputJson = Files.readString(inputFile.toPath());
             ReviewRequest request = objectMapper.readValue(inputJson, ReviewRequest.class);
 
+            DatabaseClient dbClient = new DatabaseClient();
             // Connect to Temporal server
             System.out.println("Connecting to Temporal server...");
             WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
@@ -86,7 +88,9 @@ public class WorkerApp {
                     new TestQualityActivityImpl(testQualityAgent),
                     new SecurityQualityActivityImpl(securityAgent),
                     new PriorityActivityImpl(priorityAgent),
-                    new ComplexityQualityActivityImpl(complexityAgent));
+                    new ComplexityQualityActivityImpl(complexityAgent),
+                    new OutcomeRecordingActivityImpl(dbClient),
+                    new LoadInsightsActivityImpl(dbClient));
 
             // Start worker in background
             factory.start();

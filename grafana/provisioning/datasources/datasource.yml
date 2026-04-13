@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: Neon Postgres
+    type: postgres
+    access: proxy
+    url: ${PGHOST}:5432
+    database: ${PGDATABASE}
+    user: ${PGUSER}
+    secureJsonData:
+      password: ${PGPASSWORD}
+    jsonData:
+      sslmode: require
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    isDefault: true
