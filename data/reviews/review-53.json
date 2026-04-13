@@ -1,0 +1,72 @@
+{
+  "overallRecommendation": "BLOCK",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "Hidden side effects / unsafe fallback at a boundary: `LoadInsightsActivityImpl` swallows all exceptions and returns `null`, which can silently disable learning context and mask DB failures. Smallest refactoring: Replace Silent Catch with explicit error handling or propagate the exception. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/activity/LoadInsightsActivityImpl.java` hunk `@@ -0,0 +1,22 @@` — `catch (Exception e) { // Return null on failure — review proceeds without insights return null; }`",
+        "Exception misuse / swallowed exceptions at a boundary: `GitHubClient` converts every API/IO failure into a generic `RuntimeException`, losing actionable context and making retry/handling impossible at the workflow boundary. Smallest refactoring: Wrap Third-Party API with typed exceptions and preserve status/path context. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/github/GitHubClient.java` hunk `@@ -0,0 +1,156 @@` — `catch (IOException e) { throw new RuntimeException(\"GitHub API call failed: \" + e.getMessage(), e); }`",
+        "Leaky abstraction / mixed responsibilities: `CreateLearningPRActivityImpl` is named as if it creates a PR, but the implementation only loads data and prints a report, with a TODO for the actual GitHub PR creation. This makes the activity contract misleading. Smallest refactoring: Rename the activity to match current behavior or Extract Function / Split Responsibility so PR creation is separate from report generation. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/activity/CreateLearningPRActivityImpl.java` hunk `@@ -0,0 +1,119 @@` — `// TODO: Create GitHub PR via API` and `System.out.println(\"=== Learning PR Report (v\" + proposedVersion + \") ===\");`",
+        "Not enough context in diff to assess whether the new workflow and worker scheduling are idempotent under retries, especially around `registerSchedule(...)` and `bumpLearningVersion(...)`. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/workflow/LearningWorkflowImpl.java` hunk `@@ -0,0 +1,38 @@` — `createLearningPRActivity.createLearningPR(repository, currentVersion);` and `java/temporal-review/src/main/java/com/utm/temporal/db/DatabaseClient.java` hunk `@@ -0,0 +1,720 @@` — `int nextVersion = getCurrentLearningVersion(repository) + 1;`"
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces substantial new logic and critical behavior around learning workflows, database persistence, GitHub API access, and error handling, but the provided test summary shows 0 tests executed, so coverage is effectively absent.",
+        "Test Suggestion 1: Add unit tests for ApplyLearning and DatabaseClient versioning/activation paths, including missing repository argument, null/invalid POSTGRES_URL parsing, and bumpLearningVersion/activateProposals behavior when no prior version exists or when DB writes fail.",
+        "Test Suggestion 2: Add integration tests for PRReviewWorkflowImpl and OutcomeRecordingActivity to verify learning insights are loaded when repository is present, heuristics are applied to agent results, and review outcomes are still returned when DB recording throws an exception.",
+        "Test Suggestion 3: Add tests for GitHubOutcomeActivityImpl and FindingDispositionAgent covering repository format validation (owner/repo split), merged vs closed vs open PR handling, and malformed/partial LLM JSON responses so dispositions default safely to UNKNOWN without corrupting persisted outcomes."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "`docker-compose.learning.yml` sets `GF_SECURITY_ADMIN_PASSWORD=admin` for Grafana. This is a hardcoded default admin credential; if the Grafana port `3001` is exposed, an attacker can log in with a known password and access dashboards/data.",
+        "`docker-compose.learning.yml` passes `GITHUB_TOKEN` and `OPENAI_API_KEY` into the `learning-worker` container via environment variables. While not hardcoded in the diff, these are sensitive secrets and the compose file makes it easy to run the service with broad token access; ensure they are scoped minimally and never logged or echoed.",
+        "`java/temporal-review/src/main/java/com/utm/temporal/github/GitHubClient.java` builds requests directly from `owner`, `repo`, and `prNumber` inputs in methods like `getPullRequestDiff()` and `apiGet()`. The current call sites split `repository` on `/` without validation in `FindingDispositionActivityImpl` and `GitHubOutcomeActivityImpl`; malformed repository strings could cause unexpected API paths or SSRF-like misuse if this input becomes user-controlled."
+      ]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "Cyclomatic Complexity: 24",
+        "Cognitive Complexity: 31",
+        "Primary driver: the new DatabaseClient class and workflow/activity implementations add many branching paths, loops, and nested try/catch/if logic, especially in DatabaseClient, LearningAgent, and LearningWorkerApp"
+      ]
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "P0: Hardcoded Grafana admin password (`GF_SECURITY_ADMIN_PASSWORD=admin`) creates a known-credential exposure if the service is reachable; replace with a secret from the environment/secret manager and avoid exposing Grafana publicly [Security] - Remove the default password and require a unique secret before deployment.",
+        "P0: Repository-derived GitHub API paths are built from unvalidated `owner/repo` input, which can lead to malformed requests or unintended API access if the repository string is user-controlled; validate and normalize repository format before constructing requests [Security] - Enforce strict `owner/repo` validation and reject invalid inputs early.",
+        "P1: Critical workflow and persistence paths have no executed tests in the provided summary, leaving new learning/versioning, GitHub API, and error-handling behavior unverified [TestQuality] - Add unit and integration tests for version bumps, DB failures, PR review workflow, and malformed API/LLM responses before merge.",
+        "P1: `LoadInsightsActivityImpl` swallows all exceptions and returns `null`, silently masking database failures and disabling learning context; this can hide production issues and make retries impossible [CodeQuality] - Propagate a typed exception or return an explicit failure result instead of `null`.",
+        "P1: `GitHubClient` wraps every API/IO failure in a generic `RuntimeException`, losing status and request context needed for retries and debugging [CodeQuality] - Introduce typed exceptions that preserve HTTP status, endpoint, and cause details.",
+        "P1: The new workflow/persistence logic may not be idempotent under retries, especially around schedule registration and learning version bumps, which risks duplicate side effects [CodeQuality] - Make version updates and schedule registration idempotent and add retry-focused tests.",
+        "P1: `CreateLearningPRActivityImpl` is misleadingly named because it only loads data and prints a report, with PR creation still marked TODO; this obscures the contract and mixes responsibilities [CodeQuality] - Rename the activity to match current behavior or split report generation from PR creation.",
+        "P1: The new codebase has very high complexity (cyclomatic 24, cognitive 31), concentrated in `DatabaseClient`, workflow, and worker logic, which increases defect risk and makes maintenance harder [Complexity] - Break large methods into smaller units and simplify branching/exception handling.",
+        "P2: `docker-compose.learning.yml` passes `GITHUB_TOKEN` and `OPENAI_API_KEY` into the worker container; while expected, this increases secret-handling risk if logs or debug output leak them [Security] - Scope tokens minimally and ensure they are never printed or persisted.",
+        "P2: The test plan should explicitly cover repository parsing, merged/closed/open PR handling, and safe defaults for malformed LLM JSON to prevent corrupt persisted outcomes [TestQuality] - Add focused tests for these edge cases and default-to-UNKNOWN behavior."
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-13T00:22:14.864Z",
+    "tookMs": 22522,
+    "model": "gpt-5.4-mini"
+  },
+  "prNumber": 53,
+  "prTitle": "Ai agent",
+  "author": "nadvolod"
+}
