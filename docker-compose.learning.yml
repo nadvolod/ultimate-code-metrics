@@ -1,0 +1,29 @@
+services:
+  learning-worker:
+    build:
+      context: java/temporal-review
+      dockerfile: Dockerfile.learning
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      - temporal
+    command: ["${REPO_SLUG:-owner/repo}"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - PGHOST=${PGHOST}
+      - PGDATABASE=${PGDATABASE}
+      - PGUSER=${PGUSER}
+      - PGPASSWORD=${PGPASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
