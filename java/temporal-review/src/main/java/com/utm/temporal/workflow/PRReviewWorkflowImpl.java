@@ -1,8 +1,8 @@
 package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.*;
+import com.utm.temporal.config.AppConfig;
 import com.utm.temporal.learning.HeuristicsEngine;
-import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.*;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -17,12 +17,12 @@ import java.util.List;
 public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private static final Logger logger = Workflow.getLogger(PRReviewWorkflowImpl.class);
 
-    // 1. configure how activities should behave
+    // 1. configure how activities should behave (values driven by environment variables)
     private static final ActivityOptions ACTIVITY_OPTIONS = ActivityOptions.newBuilder()
-            .setStartToCloseTimeout(Duration.ofSeconds(60))  // How long can one attempt take?
+            .setStartToCloseTimeout(Duration.ofSeconds(AppConfig.getActivityTimeoutSeconds()))
             .setRetryOptions(RetryOptions.newBuilder()
-                    .setInitialInterval(Duration.ofSeconds(5)) // How long before first retry? 2 sec is better for LLM
-                    .setBackoffCoefficient(2)   // Multiply wait time by what?
+                    .setInitialInterval(Duration.ofSeconds(AppConfig.getRetryIntervalSeconds()))
+                    .setBackoffCoefficient(2)
                     .build())
             .build();
 
@@ -133,7 +133,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                     outcome.systemRecommendation = overall;
                     outcome.agentResults = results;
                     outcome.tookMs = tookMs;
-                    outcome.model = "gpt-4o-mini";
+                    outcome.model = AppConfig.getOpenAiModel();
                     outcome.learningVersion = insights != null ? insights.learningVersion : 0;
                     outcomeRecordingActivity.recordReviewOutcome(outcome);
                 } catch (Exception e) {
@@ -144,7 +144,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             Metadata metadata = new Metadata(
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
-                    OpenAiLlmClient.DEFAULT_MODEL
+                    AppConfig.getOpenAiModel()
             );
 
             ReviewResponse response = new ReviewResponse(
