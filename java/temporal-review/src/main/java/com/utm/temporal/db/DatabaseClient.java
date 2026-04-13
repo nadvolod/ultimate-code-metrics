@@ -71,7 +71,8 @@ public class DatabaseClient {
                                   String prDescription, String author) throws SQLException {
         String sql = "INSERT INTO pull_requests (repository, pr_number, pr_title, pr_description, author, status) " +
                      "VALUES (?, ?, ?, ?, ?, 'OPEN') " +
-                     "ON CONFLICT (repository, pr_number) DO UPDATE SET pr_title = EXCLUDED.pr_title " +
+                     "ON CONFLICT (repository, pr_number) DO UPDATE SET pr_title = EXCLUDED.pr_title, " +
+                     "pr_description = EXCLUDED.pr_description, author = EXCLUDED.author " +
                      "RETURNING id";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -98,7 +99,9 @@ public class DatabaseClient {
 
         String sql = "INSERT INTO review_runs (pull_request_id, review_id, learning_version, " +
                      "overall_recommendation, agent_results_json, took_ms, model) " +
-                     "VALUES (?, ?, ?, ?, ?::jsonb, ?, ?) RETURNING id";
+                     "VALUES (?, ?, ?, ?, ?::jsonb, ?, ?) " +
+                     "ON CONFLICT (review_id) DO UPDATE SET pull_request_id = review_runs.pull_request_id " +
+                     "RETURNING id";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, pullRequestId);
@@ -485,7 +488,8 @@ public class DatabaseClient {
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                      "ON CONFLICT (repository, agent_name, learning_version) DO UPDATE SET " +
                      "total_findings = EXCLUDED.total_findings, accepted_findings = EXCLUDED.accepted_findings, " +
-                     "dismissed_findings = EXCLUDED.dismissed_findings, precision_rate = EXCLUDED.precision_rate, " +
+                     "dismissed_findings = EXCLUDED.dismissed_findings, deferred_findings = EXCLUDED.deferred_findings, " +
+                     "precision_rate = EXCLUDED.precision_rate, " +
                      "computed_at = NOW()";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -522,8 +526,8 @@ public class DatabaseClient {
 
     public void activateProposals(String repository, int activatedVersion) throws SQLException {
         try (Connection conn = getConnection()) {
-            String[] tables = {"learned_heuristics", "severity_calibrations", "prompt_patch_suggestions"};
-            for (String table : tables) {
+            // learned_heuristics and prompt_patch_suggestions have an approved_at column
+            for (String table : new String[]{"learned_heuristics", "prompt_patch_suggestions"}) {
                 String sql = "UPDATE " + table + " SET status = 'APPROVED', activated_version = ?, " +
                              "approved_at = NOW() WHERE repository = ? AND status = 'PROPOSED'";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -532,12 +536,54 @@ public class DatabaseClient {
                     stmt.executeUpdate();
                 }
             }
+            // severity_calibrations has no approved_at column
+            String sql = "UPDATE severity_calibrations SET status = 'APPROVED', activated_version = ? " +
+                         "WHERE repository = ? AND status = 'PROPOSED'";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, activatedVersion);
+                stmt.setString(2, repository);
+                stmt.executeUpdate();
+            }
         }
     }
 
     // ============================================================
     // Findings for disposition inference (Phase 3)
     // ============================================================
+
+    /**
+     * Loads review IDs that have findings without outcomes yet, regardless of PR status.
+     * This avoids the ordering bug where collectOutcomes updates PR status before
+     * inferDispositions runs, causing the OPEN-status query to find nothing.
+     */
+    public List<ReviewOutcome> loadReviewsWithPendingFindings(String repository) throws SQLException {
+        String sql = "SELECT DISTINCT rr.review_id, pr.pr_number, pr.pr_title, pr.author, " +
+                     "rr.overall_recommendation, rr.reviewed_at, rr.learning_version " +
+                     "FROM review_runs rr " +
+                     "JOIN pull_requests pr ON rr.pull_request_id = pr.id " +
+                     "JOIN findings f ON f.review_run_id = rr.id " +
+                     "LEFT JOIN finding_outcomes fo ON f.id = fo.finding_id " +
+                     "WHERE pr.repository = ? AND fo.id IS NULL";
+        List<ReviewOutcome> outcomes = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                ReviewOutcome outcome = new ReviewOutcome();
+                outcome.reviewId = rs.getString("review_id");
+                outcome.repository = repository;
+                outcome.prNumber = rs.getInt("pr_number");
+                outcome.prTitle = rs.getString("pr_title");
+                outcome.author = rs.getString("author");
+                outcome.systemRecommendation = rs.getString("overall_recommendation");
+                outcome.reviewedAt = rs.getString("reviewed_at");
+                outcome.learningVersion = rs.getInt("learning_version");
+                outcomes.add(outcome);
+            }
+        }
+        return outcomes;
+    }
 
     public List<FindingOutcome> loadFindingsForReview(String reviewId) throws SQLException {
         String sql = "SELECT f.id, f.agent_name, f.finding_text, f.risk_level " +

@@ -23,6 +23,9 @@ public class GitHubClient {
     }
 
     public GitHubClient(String token) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException("GITHUB_TOKEN must be set and non-blank");
+        }
         this.token = token;
         this.objectMapper = new ObjectMapper();
         this.httpClient = new OkHttpClient.Builder()

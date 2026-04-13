@@ -67,8 +67,8 @@ public class GitHubOutcomeActivityImpl implements GitHubOutcomeActivity {
                         databaseClient.savePostMergeOutcome(prId, hadRevert, revertPrNumber, hadFollowUp);
                     }
 
-                    // Capture review comments
-                    saveReviewComments(owner, repo, outcome.prNumber, prId);
+                    // TODO: Re-enable once saveReviewComments persists to DB instead of just fetching
+                    // saveReviewComments(owner, repo, outcome.prNumber, prId);
                 }
             }
         } catch (Exception e) {

@@ -30,9 +30,9 @@ public class LearningWorkflowImpl implements LearningWorkflow {
     @Override
     public void learn(String repository) {
         logger.info("Starting learning analysis for " + repository);
-        learningActivity.analyzeOutcomes(repository);
-        logger.info("Learning analysis complete, creating PR for review");
-        createLearningPRActivity.createLearningPR(repository, 0);
+        int currentVersion = learningActivity.analyzeOutcomes(repository);
+        logger.info("Learning analysis complete (v" + currentVersion + "), creating PR for review");
+        createLearningPRActivity.createLearningPR(repository, currentVersion);
         logger.info("Learning PR created for " + repository);
     }
 }

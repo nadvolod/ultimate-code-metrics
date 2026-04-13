@@ -28,7 +28,7 @@ public class FindingDispositionActivityImpl implements FindingDispositionActivit
             String owner = parts[0];
             String repo = parts[1];
 
-            List<ReviewOutcome> pending = databaseClient.loadPendingOutcomes(repository);
+            List<ReviewOutcome> pending = databaseClient.loadReviewsWithPendingFindings(repository);
 
             for (ReviewOutcome outcome : pending) {
                 // Load findings that don't have outcomes yet

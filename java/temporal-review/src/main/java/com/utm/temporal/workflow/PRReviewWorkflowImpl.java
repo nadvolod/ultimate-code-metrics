@@ -71,13 +71,8 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
                 }
             }
 
-            // Build prompt context from approved patches (empty string if no insights)
-            List<PromptPatch> patches = insights != null && insights.activePromptPatches != null
-                    ? insights.activePromptPatches : new ArrayList<>();
-            String codeQualityContext = HeuristicsEngine.buildPromptContext(patches, "Code Quality");
-            String testQualityContext = HeuristicsEngine.buildPromptContext(patches, "Test Quality");
-            String securityContext = HeuristicsEngine.buildPromptContext(patches, "Security");
-            String complexityContext = HeuristicsEngine.buildPromptContext(patches, "Complexity");
+            // TODO: Wire prompt patches into activity calls once activities accept context.
+            // Use HeuristicsEngine.buildPromptContext(patches, agentName) per agent.
 
             HeuristicsEngine heuristicsEngine = new HeuristicsEngine(insights);
 

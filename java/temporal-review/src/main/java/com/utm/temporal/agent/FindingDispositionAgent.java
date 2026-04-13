@@ -10,13 +10,19 @@ import com.utm.temporal.model.FindingOutcome;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Compares review findings against follow-up changes to infer
  * which findings were addressed (ACCEPTED) vs ignored (DISMISSED).
  */
 public class FindingDispositionAgent {
+
+    private static final Set<String> VALID_DISPOSITIONS = Set.of(
+            "ACCEPTED", "DISMISSED", "DEFERRED", "UNKNOWN");
 
     private final LlmClient llmClient;
     private final ObjectMapper objectMapper;
@@ -60,6 +66,17 @@ public class FindingDispositionAgent {
             JsonNode root = objectMapper.readTree(response);
             JsonNode dispositions = root.path("dispositions");
 
+            // Build a map from findingIndex to disposition node for order-independent lookup
+            Map<Integer, JsonNode> dispositionMap = new HashMap<>();
+            if (dispositions.isArray()) {
+                for (JsonNode d : dispositions) {
+                    int idx = d.path("findingIndex").asInt(-1);
+                    if (idx >= 0) {
+                        dispositionMap.put(idx, d);
+                    }
+                }
+            }
+
             List<FindingOutcome> results = new ArrayList<>();
             for (int i = 0; i < findings.size(); i++) {
                 FindingOutcome original = findings.get(i);
@@ -67,9 +84,10 @@ public class FindingDispositionAgent {
                         original.agentName, original.finding, original.riskLevel, "UNKNOWN");
                 result.findingId = original.findingId;
 
-                if (dispositions.has(i)) {
-                    JsonNode d = dispositions.get(i);
-                    result.disposition = d.path("disposition").asText("UNKNOWN");
+                JsonNode d = dispositionMap.get(i);
+                if (d != null) {
+                    String disposition = d.path("disposition").asText("UNKNOWN");
+                    result.disposition = VALID_DISPOSITIONS.contains(disposition) ? disposition : "UNKNOWN";
                     result.evidence = d.path("evidence").asText("");
                 }
                 results.add(result);

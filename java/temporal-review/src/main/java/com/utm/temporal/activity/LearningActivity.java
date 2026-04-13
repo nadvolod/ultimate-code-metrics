@@ -6,5 +6,5 @@ import io.temporal.activity.ActivityMethod;
 @ActivityInterface
 public interface LearningActivity {
     @ActivityMethod(name = "AnalyzeOutcomes")
-    void analyzeOutcomes(String repository);
+    int analyzeOutcomes(String repository);
 }

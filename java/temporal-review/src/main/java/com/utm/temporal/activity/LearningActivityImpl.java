@@ -18,18 +18,18 @@ public class LearningActivityImpl implements LearningActivity {
     }
 
     @Override
-    public void analyzeOutcomes(String repository) {
+    public int analyzeOutcomes(String repository) {
         try {
             // 1. Compute stats from DB (deterministic)
             Map<String, AgentAccuracy> accuracyStats = databaseClient.computeAgentAccuracy(repository);
             List<FindingOutcome> allFindings = databaseClient.loadAllFindingsWithOutcomes(repository);
             int totalReviews = databaseClient.countReviewsForRepo(repository);
 
-            if (totalReviews < 5) {
-                return; // Not enough data to learn from
-            }
-
             int currentVersion = databaseClient.getCurrentLearningVersion(repository);
+
+            if (totalReviews < 5) {
+                return currentVersion; // Not enough data to learn from
+            }
 
             // 2. Use LLM for pattern analysis (semantic)
             LearningProposals proposals = agent.analyze(repository, accuracyStats, allFindings, totalReviews);
@@ -53,6 +53,8 @@ public class LearningActivityImpl implements LearningActivity {
                 databaseClient.saveAgentPrecisionProfile(
                         repository, entry.getKey(), currentVersion, entry.getValue());
             }
+
+            return currentVersion;
 
         } catch (Exception e) {
             throw new RuntimeException("Learning analysis failed: " + e.getMessage(), e);
