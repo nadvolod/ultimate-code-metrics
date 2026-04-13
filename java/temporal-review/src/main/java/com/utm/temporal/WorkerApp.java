@@ -89,7 +89,8 @@ public class WorkerApp {
                     new SecurityQualityActivityImpl(securityAgent),
                     new PriorityActivityImpl(priorityAgent),
                     new ComplexityQualityActivityImpl(complexityAgent),
-                    new OutcomeRecordingActivityImpl(dbClient));
+                    new OutcomeRecordingActivityImpl(dbClient),
+                    new LoadInsightsActivityImpl(dbClient));
 
             // Start worker in background
             factory.start();

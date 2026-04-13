@@ -1,0 +1,53 @@
+{
+  "dashboard": {
+    "title": "System Quality",
+    "tags": ["learning-agent"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "title": "Accepted Finding Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT snapshot_at AS time, accepted_finding_rate AS value FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY snapshot_at",
+          "format": "time_series"
+        }]
+      },
+      {
+        "title": "False Positive Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT snapshot_at AS time, false_positive_rate AS value FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY snapshot_at",
+          "format": "time_series"
+        }]
+      },
+      {
+        "title": "Post-Merge Bug Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [{
+          "rawSql": "SELECT snapshot_at AS time, post_merge_bug_rate AS value FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY snapshot_at",
+          "format": "time_series"
+        }]
+      },
+      {
+        "title": "Avg Findings per PR",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [{
+          "rawSql": "SELECT snapshot_at AS time, avg_findings_per_pr AS value FROM evaluation_snapshots WHERE repository = '$repository' ORDER BY snapshot_at",
+          "format": "time_series"
+        }]
+      }
+    ],
+    "templating": {
+      "list": [{
+        "name": "repository",
+        "type": "query",
+        "query": "SELECT DISTINCT repository FROM evaluation_snapshots",
+        "current": {"text": "All", "value": "All"}
+      }]
+    }
+  }
+}

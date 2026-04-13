@@ -5,14 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.temporal.model.*;
 
 import java.sql.*;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class DatabaseClient {
-    private final String connectionUrl;
+    private final String jdbcUrl;
+    private final Properties connectionProps;
     private final ObjectMapper objectMapper;
 
     public DatabaseClient() {
@@ -20,12 +21,46 @@ public class DatabaseClient {
     }
 
     public DatabaseClient(String connectionUrl) {
-        this.connectionUrl = connectionUrl;
         this.objectMapper = new ObjectMapper();
+        this.connectionProps = new Properties();
+
+        if (connectionUrl == null) {
+            this.jdbcUrl = null;
+            return;
+        }
+
+        // Parse the URL to extract credentials and build a clean JDBC URL
+        // Input:  postgresql://user:pass@host/db?params
+        // Output: jdbc:postgresql://host/db?params  + properties for user/password
+        try {
+            java.net.URI uri = new java.net.URI(connectionUrl.replace("postgresql://", "http://"));
+            String host = uri.getHost();
+            int port = uri.getPort() > 0 ? uri.getPort() : 5432;
+            String path = uri.getPath();
+            String query = uri.getQuery();
+
+            String userInfo = uri.getUserInfo();
+            if (userInfo != null) {
+                String[] parts = userInfo.split(":", 2);
+                connectionProps.setProperty("user", parts[0]);
+                if (parts.length > 1) {
+                    connectionProps.setProperty("password", parts[1]);
+                }
+            }
+
+            // Always require SSL for Neon
+            connectionProps.setProperty("sslmode", "require");
+
+            this.jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path
+                    + (query != null ? "?" + query : "");
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse database URL: " + e.getMessage(), e);
+        }
     }
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(connectionUrl);
+        return DriverManager.getConnection(jdbcUrl, connectionProps);
     }
 
     // ============================================================
@@ -527,6 +562,101 @@ public class DatabaseClient {
         }
         return findings;
     }
+
+    // ============================================================
+    // Evaluation (Phase 6)
+    // ============================================================
+
+    public void saveEvaluationSnapshot(String repository, int learningVersion,
+                                        double acceptedRate, double falsePositiveRate,
+                                        double missedIssueRate, double postMergeBugRate,
+                                        double avgFindings, double highSignalFindings,
+                                        double agreementRate, double avgTimeToMerge,
+                                        int totalReviews, int totalFindings) throws SQLException {
+        String sql = "INSERT INTO evaluation_snapshots (repository, learning_version, " +
+                     "accepted_finding_rate, false_positive_rate, missed_issue_rate, post_merge_bug_rate, " +
+                     "avg_findings_per_pr, high_signal_findings_per_pr, reviewer_agreement_rate, " +
+                     "avg_time_to_merge_hours, total_reviews, total_findings) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            stmt.setInt(2, learningVersion);
+            stmt.setDouble(3, acceptedRate);
+            stmt.setDouble(4, falsePositiveRate);
+            stmt.setDouble(5, missedIssueRate);
+            stmt.setDouble(6, postMergeBugRate);
+            stmt.setDouble(7, avgFindings);
+            stmt.setDouble(8, highSignalFindings);
+            stmt.setDouble(9, agreementRate);
+            stmt.setDouble(10, avgTimeToMerge);
+            stmt.setInt(11, totalReviews);
+            stmt.setInt(12, totalFindings);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void saveVersionDelta(String repository, int fromVersion, int toVersion,
+                                  String metricName, double fromValue, double toValue,
+                                  boolean improvement) throws SQLException {
+        String sql = "INSERT INTO learning_version_deltas (repository, from_version, to_version, " +
+                     "metric_name, from_value, to_value, delta, improvement) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            stmt.setInt(2, fromVersion);
+            stmt.setInt(3, toVersion);
+            stmt.setString(4, metricName);
+            stmt.setDouble(5, fromValue);
+            stmt.setDouble(6, toValue);
+            stmt.setDouble(7, toValue - fromValue);
+            stmt.setBoolean(8, improvement);
+            stmt.executeUpdate();
+        }
+    }
+
+    public int countFindingsForRepo(String repository) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM findings f " +
+                     "JOIN review_runs rr ON f.review_run_id = rr.id " +
+                     "JOIN pull_requests pr ON rr.pull_request_id = pr.id " +
+                     "WHERE pr.repository = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    public int countMergedPRsWithBugs(String repository) throws SQLException {
+        String sql = "SELECT COUNT(DISTINCT pr.id) FROM pull_requests pr " +
+                     "JOIN post_merge_outcomes pmo ON pr.id = pmo.pull_request_id " +
+                     "WHERE pr.repository = ? AND (pmo.had_revert = true OR pmo.had_follow_up_fixes = true)";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    public int countMergedPRs(String repository) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM pull_requests WHERE repository = ? AND status = 'MERGED'";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, repository);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    // ============================================================
+    // Findings for disposition inference (Phase 3)
+    // ============================================================
 
     public int getPullRequestId(String repository, int prNumber) throws SQLException {
         String sql = "SELECT id FROM pull_requests WHERE repository = ? AND pr_number = ?";
