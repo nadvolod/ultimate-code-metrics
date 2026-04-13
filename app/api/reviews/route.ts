@@ -2,64 +2,145 @@ import { NextRequest, NextResponse } from "next/server"
 import { readdir, readFile } from "fs/promises"
 import { join } from "path"
 import { transformReviewResponses } from "@/lib/api/review-transformer"
-import type { BackendReviewResponse, TestReport } from "@/lib/types/review"
+import type { BackendReviewResponse, FrontendRecommendation, TestReport } from "@/lib/types/review"
 
 const REVIEWS_DIR = join(process.cwd(), "data", "reviews")
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = request.nextUrl
+const VALID_SORT_FIELDS = ["date", "prNumber"] as const
+const VALID_SORT_DIRS = ["asc", "desc"] as const
+type SortField = (typeof VALID_SORT_FIELDS)[number]
+type SortDir = (typeof VALID_SORT_DIRS)[number]
 
-    // Parse pagination parameters
-    const limitParam = searchParams.get("limit")
-    const offsetParam = searchParams.get("offset")
+interface QueryOptions {
+  limit: number | undefined
+  offset: number
+  sort: SortField
+  sortDir: SortDir
+  recommendation: string | null
+  /** Filters by agent name (stored as `findings.category` in the frontend model) */
+  agent: string | null
+}
 
-    let limit: number | undefined
-    if (limitParam !== null) {
-      const parsed = parseInt(limitParam, 10)
-      if (isNaN(parsed) || parsed < 1) {
-        return NextResponse.json({ error: "Invalid 'limit': must be a positive integer" }, { status: 400 })
+/** Parses and validates all query parameters. Returns a 400 response on invalid input. */
+function parseQueryOptions(
+  searchParams: URLSearchParams
+): { options: QueryOptions } | { error: NextResponse } {
+  // limit
+  const limitParam = searchParams.get("limit")
+  let limit: number | undefined
+  if (limitParam !== null) {
+    const parsed = parseInt(limitParam, 10)
+    if (isNaN(parsed) || parsed < 1) {
+      return {
+        error: NextResponse.json(
+          { error: "Invalid 'limit': must be a positive integer" },
+          { status: 400 }
+        ),
       }
-      limit = parsed
     }
+    limit = parsed
+  }
 
-    let offset = 0
-    if (offsetParam !== null) {
-      const parsed = parseInt(offsetParam, 10)
-      if (isNaN(parsed) || parsed < 0) {
-        return NextResponse.json({ error: "Invalid 'offset': must be a non-negative integer" }, { status: 400 })
+  // offset
+  const offsetParam = searchParams.get("offset")
+  let offset = 0
+  if (offsetParam !== null) {
+    const parsed = parseInt(offsetParam, 10)
+    if (isNaN(parsed) || parsed < 0) {
+      return {
+        error: NextResponse.json(
+          { error: "Invalid 'offset': must be a non-negative integer" },
+          { status: 400 }
+        ),
       }
-      offset = parsed
     }
+    offset = parsed
+  }
 
-    // Parse and validate sort parameters
-    const sortParam = searchParams.get("sort") ?? "date"
-    const sortDirParam = searchParams.get("sortDir") ?? "desc"
-
-    const VALID_SORT_FIELDS = ["date", "prNumber"] as const
-    const VALID_SORT_DIRS = ["asc", "desc"] as const
-    type SortField = (typeof VALID_SORT_FIELDS)[number]
-    type SortDir = (typeof VALID_SORT_DIRS)[number]
-
-    if (!(VALID_SORT_FIELDS as readonly string[]).includes(sortParam)) {
-      return NextResponse.json(
+  // sort
+  const sortParam = searchParams.get("sort") ?? "date"
+  if (!(VALID_SORT_FIELDS as readonly string[]).includes(sortParam)) {
+    return {
+      error: NextResponse.json(
         { error: `Invalid 'sort': must be one of ${VALID_SORT_FIELDS.join(", ")}` },
         { status: 400 }
-      )
+      ),
     }
-    if (!(VALID_SORT_DIRS as readonly string[]).includes(sortDirParam)) {
-      return NextResponse.json(
+  }
+
+  // sortDir
+  const sortDirParam = searchParams.get("sortDir") ?? "desc"
+  if (!(VALID_SORT_DIRS as readonly string[]).includes(sortDirParam)) {
+    return {
+      error: NextResponse.json(
         { error: `Invalid 'sortDir': must be one of ${VALID_SORT_DIRS.join(", ")}` },
         { status: 400 }
-      )
+      ),
     }
+  }
 
-    const sort = sortParam as SortField
-    const sortDir = sortDirParam as SortDir
+  return {
+    options: {
+      limit,
+      offset,
+      sort: sortParam as SortField,
+      sortDir: sortDirParam as SortDir,
+      // Normalise to uppercase so callers can compare against FrontendRecommendation values
+      recommendation: searchParams.get("recommendation")?.toUpperCase() ?? null,
+      agent: searchParams.get("agent"),
+    },
+  }
+}
 
-    // Parse filter parameters
-    const recommendationFilter = searchParams.get("recommendation")?.toUpperCase() ?? null
-    const agentFilter = searchParams.get("agent")
+/**
+ * Extracts the `generatedAt` epoch ms embedded in a report id.
+ * Id format: `${filename_without_ext}-${epochMs}` (see generateId in review-transformer.ts).
+ */
+function extractGeneratedAtMs(id: string): number {
+  const lastDash = id.lastIndexOf("-")
+  if (lastDash < 0) return 0
+  const ms = parseInt(id.slice(lastDash + 1), 10)
+  return isNaN(ms) ? 0 : ms
+}
+
+/** Comparator for sorting reports. */
+function compareReports(a: TestReport, b: TestReport, sort: SortField, sortDir: SortDir): number {
+  let comparison = 0
+  if (sort === "prNumber") {
+    comparison = a.prNumber - b.prNumber
+  } else {
+    // sort === "date": compare by the generatedAt timestamp embedded in the id
+    comparison = extractGeneratedAtMs(a.id) - extractGeneratedAtMs(b.id)
+  }
+  return sortDir === "asc" ? comparison : -comparison
+}
+
+/** Applies recommendation and agent filters to the report list. */
+function applyFilters(
+  reports: TestReport[],
+  recommendation: string | null,
+  agent: string | null
+): TestReport[] {
+  let filtered = reports
+  if (recommendation) {
+    filtered = filtered.filter(
+      (r) => r.recommendation === (recommendation as FrontendRecommendation)
+    )
+  }
+  if (agent) {
+    // Each finding's `category` equals the originating agent's name (see review-transformer.ts)
+    filtered = filtered.filter((r) =>
+      r.findings.some((f) => f.category.toLowerCase() === agent.toLowerCase())
+    )
+  }
+  return filtered
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const result = parseQueryOptions(request.nextUrl.searchParams)
+    if ("error" in result) return result.error
+    const { limit, offset, sort, sortDir, recommendation, agent } = result.options
 
     // Read all JSON files from the reviews directory
     let files: string[]
@@ -91,37 +172,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Transform to frontend format
-    let testReports: TestReport[] = transformReviewResponses(reviews)
-
-    // Apply filtering
-    if (recommendationFilter) {
-      testReports = testReports.filter((r) => r.recommendation === recommendationFilter)
-    }
-
-    if (agentFilter) {
-      testReports = testReports.filter((r) =>
-        r.findings.some((f) => f.category.toLowerCase() === agentFilter.toLowerCase())
-      )
-    }
-
-    // Apply sorting (overrides the default sort from transformReviewResponses)
-    testReports.sort((a, b) => {
-      let comparison = 0
-      if (sort === "prNumber") {
-        comparison = a.prNumber - b.prNumber
-      } else {
-        // Default: sort by date using id (which contains the generatedAt timestamp)
-        comparison = a.id.localeCompare(b.id)
-      }
-      return sortDir === "asc" ? comparison : -comparison
-    })
-
-    const total = testReports.length
-
-    // Apply pagination
+    // Transform, filter, sort, then paginate
+    const allReports = transformReviewResponses(reviews)
+    const filtered = applyFilters(allReports, recommendation, agent)
+    const sorted = [...filtered].sort((a, b) => compareReports(a, b, sort, sortDir))
+    const total = sorted.length
     const paginatedReports =
-      limit !== undefined ? testReports.slice(offset, offset + limit) : testReports.slice(offset)
+      limit !== undefined ? sorted.slice(offset, offset + limit) : sorted.slice(offset)
 
     return NextResponse.json({
       data: paginatedReports,
@@ -134,3 +191,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 })
   }
 }
+
