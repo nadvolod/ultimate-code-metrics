@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 /**
  * Applies approved heuristics and severity calibrations to AgentResults.
  * This is deterministic post-processing — no LLM calls.
+ *
+ * The engine loads learned rules from the database and applies them to each
+ * agent's output, filtering false positives and calibrating severity levels
+ * based on historical review outcome data.
  */
 public class HeuristicsEngine {
     private final List<LearnedHeuristic> heuristics;
