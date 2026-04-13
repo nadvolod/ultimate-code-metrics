@@ -27,7 +27,14 @@ public class GitHubOutcomeActivityImpl implements GitHubOutcomeActivity {
             List<ReviewOutcome> pending = databaseClient.loadPendingOutcomes(repository);
 
             for (ReviewOutcome outcome : pending) {
-                PullRequestInfo prInfo = gitHubClient.getPullRequest(owner, repo, outcome.prNumber);
+                PullRequestInfo prInfo;
+                try {
+                    prInfo = gitHubClient.getPullRequest(owner, repo, outcome.prNumber);
+                } catch (Exception e) {
+                    // PR may not exist on GitHub (e.g., test data) — skip it
+                    System.err.println("Skipping PR #" + outcome.prNumber + ": " + e.getMessage());
+                    continue;
+                }
 
                 // Determine status
                 String status;
@@ -68,7 +75,7 @@ public class GitHubOutcomeActivityImpl implements GitHubOutcomeActivity {
                     }
 
                     // TODO: Re-enable once saveReviewComments persists to DB instead of just fetching
-                    // saveReviewComments(owner, repo, outcome.prNumber, prId);
+                     saveReviewComments(owner, repo, outcome.prNumber, prId);
                 }
             }
         } catch (Exception e) {

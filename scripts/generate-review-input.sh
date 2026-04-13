@@ -22,10 +22,13 @@ git diff "$BASE_SHA".."$HEAD_SHA" > "$DIFF_FILE"
 
 # Generate valid JSON using jq to properly escape all strings
 # Use --rawfile to read diff from file instead of command-line arg
+REPO="${GITHUB_REPOSITORY:-}"
+
 jq -n \
   --arg prNumber "$PR_NUMBER" \
   --arg prTitle "$PR_TITLE" \
   --arg author "$AUTHOR" \
+  --arg repository "$REPO" \
   --rawfile diff "$DIFF_FILE" \
   '{
     prNumber: ($prNumber | tonumber),
@@ -33,7 +36,8 @@ jq -n \
     author: $author,
     prDescription: "",
     diff: $diff,
-    testSummary: null
+    testSummary: null,
+    repository: (if $repository == "" then null else $repository end)
   }' > "$OUTPUT_FILE"
 
 # Clean up temp file

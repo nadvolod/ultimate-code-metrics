@@ -59,6 +59,7 @@ jobs:
       - name: Run PR Review
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
         run: |
           mvn -pl temporal-review exec:java \
             -Dexec.mainClass="com.utm.temporal.WorkerApp" \
