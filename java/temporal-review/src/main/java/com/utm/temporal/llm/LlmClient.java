@@ -15,4 +15,10 @@ public interface LlmClient {
      * @return The LLM's response content as a string
      */
     String chat(List<Message> messages, LlmOptions options);
+
+    /** Prompt tokens used in the last chat() call. */
+    default int getLastPromptTokens() { return 0; }
+
+    /** Completion tokens used in the last chat() call. */
+    default int getLastCompletionTokens() { return 0; }
 }

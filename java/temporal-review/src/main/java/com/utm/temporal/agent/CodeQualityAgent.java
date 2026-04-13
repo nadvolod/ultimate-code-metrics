@@ -57,7 +57,10 @@ public class CodeQualityAgent {
             String response = llmClient.chat(messages, options);
 
             // Parse JSON response into AgentResult
-            return objectMapper.readValue(response, AgentResult.class);
+            AgentResult result = objectMapper.readValue(response, AgentResult.class);
+            result.promptTokens = llmClient.getLastPromptTokens();
+            result.completionTokens = llmClient.getLastCompletionTokens();
+            return result;
 
         } catch (Exception e) {
             // Fail fast - no retry logic!
