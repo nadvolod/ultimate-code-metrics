@@ -2,6 +2,7 @@ package com.utm.temporal.workflow;
 
 import com.utm.temporal.activity.*;
 import com.utm.temporal.learning.HeuristicsEngine;
+import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.*;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -143,7 +144,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             Metadata metadata = new Metadata(
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
-                    "gpt-4o-mini"
+                    OpenAiLlmClient.DEFAULT_MODEL
             );
 
             ReviewResponse response = new ReviewResponse(
