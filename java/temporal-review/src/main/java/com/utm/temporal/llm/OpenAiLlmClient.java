@@ -23,6 +23,7 @@ public class OpenAiLlmClient implements LlmClient {
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private static final int MAX_RETRIES = 3;
+    private static final int TOTAL_ATTEMPTS = MAX_RETRIES + 1;
     private static final long INITIAL_BACKOFF_MS = 1000L;
     private static final long MAX_BACKOFF_MS = 30000L;
 
@@ -58,9 +59,9 @@ public class OpenAiLlmClient implements LlmClient {
 
         IOException lastException = null;
 
-        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             if (attempt > 0) {
-                long backoffMs = Math.min(INITIAL_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS);
+                long backoffMs = Math.min(INITIAL_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS); // 2^(attempt-1) seconds
                 logger.warn("OpenAI API call failed (attempt {}), retrying in {}ms...", attempt, backoffMs);
                 try {
                     Thread.sleep(backoffMs);
@@ -111,10 +112,10 @@ public class OpenAiLlmClient implements LlmClient {
         }
 
         // All retries exhausted
-        logger.error("OpenAI API call failed after {} attempts. Last error: {}", MAX_RETRIES + 1,
+        logger.error("OpenAI API call failed after {} attempts. Last error: {}", TOTAL_ATTEMPTS,
                 lastException != null ? lastException.getMessage() : "unknown");
         throw new RuntimeException(
-                "OpenAI API call failed after " + (MAX_RETRIES + 1) + " attempts [error_code=SERVICE_UNAVAILABLE]: " +
+                "OpenAI API call failed after " + TOTAL_ATTEMPTS + " attempts [error_code=SERVICE_UNAVAILABLE]: " +
                 (lastException != null ? lastException.getMessage() : "unknown error"),
                 lastException);
     }
