@@ -1,0 +1,65 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "java/temporal-review/src/main/java/com/utm/temporal/agent/CodeQualityAgent.java @@ -29,10 +29,10 @@ public class CodeQualityAgent { | \"System.getenv().getOrDefault(\\\"OPENAI_MODEL\\\", \\\"gpt-4o-mini\\\")\" — This hardcodes a new default model in the agent, while the shared client still defines its own default. That creates duplicated configuration and a hidden coupling point; apply Extract Constant or Introduce Parameter Object so the model default comes from one source of truth.",
+        "java/temporal-review/src/main/java/com/utm/temporal/agent/SecurityAgent.java @@ -29,10 +29,10 @@ public class SecurityAgent { | \"System.getenv().getOrDefault(\\\"OPENAI_MODEL\\\", \\\"gpt-4o-mini\\\")\" — Same duplicated default-model logic as the other agents. This is repeated configuration that will drift over time; apply Extract Constant and pass the model through a shared configuration boundary.",
+        "java/temporal-review/src/main/java/com/utm/temporal/agent/TestQualityAgent.java @@ -31,7 +30,7 @@ public class TestQualityAgent { | \"public AgentResult analyze(String prTitle, String prDescription, String diff, TestSummary testSummary)\" — The method signature was simplified by removing the learning-context parameter, but the diff does not show the call sites. Not enough context in diff to assess whether this is a safe API change or a broken boundary; if all callers were updated, keep the smaller signature, otherwise use Introduce Parameter Object or preserve the overload until the transition is complete.",
+        "java/temporal-review/src/main/java/com/utm/temporal/workflow/PRReviewWorkflowImpl.java @@ -42,12 +42,6 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow { | \"codeQualityActivity.analyze(request);\" / \"testQualityActivity.analyze(request);\" / \"securityQualityActivity.analyze(request);\" / \"complexityQualityActivity.analyze(request);\" — The workflow now orchestrates only direct agent calls and no longer applies the removed learning/heuristics layer. Because the diff also deletes the learning activities and database-backed context, this is a broad responsibility shift across the workflow boundary; apply Separate Responsibilities or Extract Workflow/Service so review execution and learning concerns stay decoupled."
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new behavior in the PR review comment formatter and changes agent/model defaults, but there are no tests covering the new output structure or the altered fallback behavior.",
+        "Test Suggestion 1: Add a unit test for the GitHub Actions comment-generation script that feeds a sample review JSON and asserts the rendered comment includes the verdict banner, summary table, collapsible agent sections, and dashboard link in the expected order.",
+        "Test Suggestion 2: Add regression tests for the agent LlmOptions model selection path to verify OPENAI_MODEL overrides the default and that the new hardcoded fallback remains consistent in CodeQuality, Security, TestQuality, Complexity, and Priority agents.",
+        "Test Suggestion 3: Add an integration test for PRReviewWorkflowImpl that verifies the final ReviewResponse metadata.model and persisted review output still match the review JSON contract after the agent signature changes and removed learning-related fields."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected in the changed code. The only security-relevant logic in `.github/workflows/pr-review.yml` still uses GitHub-provided PR metadata (`github.event.pull_request.*`) and writes review JSON via `jq` without introducing secret exposure, auth bypass, or unsafe input sinks.",
+        "The deleted files (`.claude/settings.json`, `.github/workflows/apply-learning.yml`, `docker-compose.learning.yml`, `grafana/*`, `java/temporal-review/src/main/resources/schema.sql`, etc.) remove infrastructure and learning components, but the remaining diff does not add any new logging, hardcoded credentials, or direct use of untrusted input in SQL/command/file-path sinks."
+      ]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Cyclomatic Complexity: 14",
+        "Cognitive Complexity: 18",
+        "Primary driver: the GitHub Actions comment-generation script now contains multiple mapping objects, helper functions, conditional fallbacks, and two loops that build the comment body and persist review data"
+      ]
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: No tests cover the new PR review comment formatter output or the changed agent/model fallback behavior, so regressions in rendered comments, model selection, and workflow contract could slip through [TestQuality] - Add unit/integration tests for comment rendering, OPENAI_MODEL override handling, and PRReviewWorkflowImpl output persistence",
+        "P2: The OPENAI_MODEL default is duplicated across multiple agents, creating a hidden coupling and drift risk [CodeQuality] - Centralize the model default in a shared constant/config object and pass it through one configuration boundary",
+        "P2: The workflow now mixes review execution with removed learning/heuristics responsibilities, increasing boundary complexity [CodeQuality] - Separate workflow orchestration from learning-related concerns or extract a dedicated service",
+        "P2: The PR review comment-generation script has moderate complexity with multiple mappings, helpers, and loops, which makes it harder to maintain [Complexity] - Refactor into smaller functions and isolate comment assembly/persistence steps"
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-13T18:30:44.918Z",
+    "tookMs": 24492,
+    "model": "gpt-5.4-mini"
+  },
+  "prNumber": 61,
+  "prTitle": "Beautify PR review comments",
+  "author": "nadvolod"
+}

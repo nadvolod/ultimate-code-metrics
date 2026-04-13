@@ -45,14 +45,20 @@ jobs:
         working-directory: java
 
       - name: Generate review input
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           chmod +x scripts/generate-review-input.sh
           ./scripts/generate-review-input.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.event.pull_request.title }}" \
-            "${{ github.event.pull_request.user.login }}" \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}" \
+            "$PR_NUMBER" \
+            "$PR_TITLE" \
+            "$PR_AUTHOR" \
+            "$PR_BASE_SHA" \
+            "$PR_HEAD_SHA" \
             /tmp/review-input.json
         working-directory: ${{ github.workspace }}
 
@@ -100,7 +106,8 @@ jobs:
             }
 
             function fmtCost(cost) {
-              if (!cost && cost !== 0) return null;
+              if (cost === null || cost === undefined) return null;
+              if (cost === 0) return null;
               return cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
             }
 
@@ -185,16 +192,20 @@ jobs:
             }
 
       - name: Persist Review to Dashboard
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          # Add PR metadata to the review output
-          jq --arg pr "${{ github.event.pull_request.number }}" \
-             --arg title "${{ github.event.pull_request.title }}" \
-             --arg author "${{ github.event.pull_request.user.login }}" \
+          jq --arg pr "$PR_NUMBER" \
+             --arg title "$PR_TITLE" \
+             --arg author "$PR_AUTHOR" \
              '. + {prNumber: ($pr | tonumber), prTitle: $title, author: $author}' \
-             /tmp/review-output.json > data/reviews/review-${{ github.event.pull_request.number }}.json
+             /tmp/review-output.json > "data/reviews/review-${PR_NUMBER}.json"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/reviews/review-${{ github.event.pull_request.number }}.json
-          git commit -m "chore: add review data for PR #${{ github.event.pull_request.number }}"
-          git push origin HEAD:${{ github.head_ref }}
+          git add "data/reviews/review-${PR_NUMBER}.json"
+          git commit -m "chore: add review data for PR #${PR_NUMBER}"
+          git push origin "HEAD:${HEAD_REF}"

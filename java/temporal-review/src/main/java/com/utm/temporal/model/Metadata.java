@@ -9,7 +9,7 @@ public class Metadata {
     public String model;            // LLM model used (e.g., "gpt-4")
     public int totalPromptTokens;   // Sum of prompt tokens across all agents
     public int totalCompletionTokens; // Sum of completion tokens across all agents
-    public double estimatedCost;    // Estimated cost in USD
+    public Double estimatedCost;    // Estimated cost in USD; null when not computed
 
     // No-arg constructor required for Jackson deserialization
     public Metadata() {}

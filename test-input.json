@@ -1,0 +1,14 @@
+{
+  "prNumber": 42,
+  "prTitle": "Add user authentication feature",
+  "author": "sarah.dev",
+  "prDescription": "This PR implements JWT-based authentication for user login and registration.",
+  "repository": "nadvolod/ultimate-code-metrics",
+  "diff": "diff --git a/src/auth/auth.service.js b/src/auth/auth.service.js\nnew file mode 100644\n--- /dev/null\n+++ b/src/auth/auth.service.js\n@@ -0,0 +1,25 @@\n+const jwt = require('jsonwebtoken');\n+class AuthService {\n+  login(user) {\n+    if (!user || !user.email) { throw new Error('Invalid user'); }\n+    return jwt.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });\n+  }\n+  verifyToken(token) {\n+    try { return jwt.verify(token, process.env.JWT_SECRET); }\n+    catch (error) { throw new Error('Invalid token'); }\n+  }\n+}\n+module.exports = AuthService;",
+  "testSummary": {
+    "passed": true,
+    "totalTests": 43,
+    "failedTests": 0,
+    "durationMs": 1500
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "java/temporal-review/src/main/java/com/utm/temporal/llm/OpenAiLlmClient.java @@ -14,7 +14,7 @@ public class OpenAiLlmClient implements LlmClient { \"private static final String DEFAULT_MODEL = \\\"gpt-5.4-mini\\\";\" — This changes the default model used by all agents and workflow metadata without any boundary check or compatibility note. This is a hidden behavior change at a shared abstraction boundary; apply Extract Constant only if the new default is intentionally coordinated across callers, otherwise keep the old default or make the model an explicit configuration parameter.",
+        "java/temporal-review/src/main/java/com/utm/temporal/workflow/PRReviewWorkflowImpl.java @@ -100,7 +101,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow { \"OpenAiLlmClient.DEFAULT_MODEL\" — The workflow now depends directly on the concrete LLM client class for a shared constant, creating tight coupling and leaking implementation details across layers. Apply Extract Constant into a neutral configuration holder or Introduce Parameter Object so workflow metadata does not depend on the client implementation."
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The change is a small refactor plus a model default update, but there are no tests covering the new default value or the propagation of that value into workflow metadata and agent options.",
+        "Test Suggestion 1: Add a unit test for OpenAiLlmClient.DEFAULT_MODEL and each agent's LlmOptions construction when OPENAI_MODEL is unset, asserting the fallback is exactly \"gpt-5.4-mini\" so a future constant change is caught.",
+        "Test Suggestion 2: Add an integration-style test for PRReviewWorkflowImpl that verifies the ReviewResponse metadata.model field matches the configured default model, ensuring the workflow output stays consistent with the client default.",
+        "Test Suggestion 3: Add a regression test for the OPENAI_MODEL override path, confirming a non-empty environment value still takes precedence over the default and that invalid/blank values do not silently break model selection."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected. The diff only refactors the default GPT model string into OpenAiLlmClient.DEFAULT_MODEL and updates metadata to use the same constant; there are no changes to authentication/authorization, secret handling, or unsafe input handling."
+      ]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 1",
+        "Cognitive Complexity: 1",
+        "Primary driver: simple constant replacement across existing assignments with no new branching or nesting"
+      ]
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: The default GPT model changed from the previous value to \"gpt-5.4-mini\" across shared workflow/client behavior, which is a hidden behavior change at a common abstraction boundary; confirm this is intentionally coordinated or make the model an explicit configuration parameter [CodeQuality] - Add an explicit compatibility note or preserve the old default until callers are updated.",
+        "P1: There are no tests covering the new default model value or its propagation into workflow metadata and agent options, so a future constant change could silently alter behavior [TestQuality] - Add unit/integration coverage for the unset-OPENAI_MODEL fallback, workflow metadata.model, and override precedence."
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-05T21:53:38.104Z",
+    "tookMs": 10874,
+    "model": "gpt-5.4-mini"
+  },
+  "prNumber": 52,
+  "prTitle": "refactor: extract GPT model into single constant",
+  "author": "nadvolod"
+}

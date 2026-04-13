@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class OpenAiLlmClient implements LlmClient {
 
-    private static final String DEFAULT_MODEL = "gpt-4o-mini";
+    public static final String DEFAULT_MODEL = "gpt-5.4-mini";
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -103,6 +103,10 @@ public class OpenAiLlmClient implements LlmClient {
     }
 
     private String parseResponse(String responseBody) throws IOException {
+        // Reset counters to avoid leaking stale values from a previous call
+        this.lastPromptTokens = 0;
+        this.lastCompletionTokens = 0;
+
         JsonNode root = objectMapper.readTree(responseBody);
         JsonNode content = root.path("choices").path(0).path("message").path("content");
 

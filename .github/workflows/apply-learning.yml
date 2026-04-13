@@ -1,0 +1,29 @@
+name: Apply Learning
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  apply:
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'learning/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Build
+        run: cd java && mvn compile -pl temporal-review -q
+
+      - name: Apply learning proposals
+        run: |
+          cd java/temporal-review
+          mvn exec:java -Dexec.mainClass="com.utm.temporal.ApplyLearning" -Dexec.args="${{ github.repository }}"
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}

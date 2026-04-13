@@ -1,0 +1,43 @@
+{
+  "dashboard": {
+    "title": "Agent Performance",
+    "tags": ["learning-agent"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "title": "Precision by Agent",
+        "type": "barchart",
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT agent_name, precision_rate FROM agent_precision_profiles WHERE repository = '$repository' AND learning_version = (SELECT MAX(learning_version) FROM agent_precision_profiles WHERE repository = '$repository')",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Findings by Agent (Accepted vs Dismissed)",
+        "type": "barchart",
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 0},
+        "targets": [{
+          "rawSql": "SELECT agent_name, accepted_findings, dismissed_findings FROM agent_precision_profiles WHERE repository = '$repository' AND learning_version = (SELECT MAX(learning_version) FROM agent_precision_profiles WHERE repository = '$repository')",
+          "format": "table"
+        }]
+      },
+      {
+        "title": "Agent Precision Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
+        "targets": [{
+          "rawSql": "SELECT computed_at AS time, agent_name AS metric, precision_rate AS value FROM agent_precision_profiles WHERE repository = '$repository' ORDER BY computed_at",
+          "format": "time_series"
+        }]
+      }
+    ],
+    "templating": {
+      "list": [{
+        "name": "repository",
+        "type": "query",
+        "query": "SELECT DISTINCT repository FROM agent_precision_profiles"
+      }]
+    }
+  }
+}

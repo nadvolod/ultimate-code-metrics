@@ -6,6 +6,7 @@ import com.utm.temporal.llm.LlmOptions;
 import com.utm.temporal.llm.Message;
 import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.AgentResult;
+import com.utm.temporal.util.PromptLoader;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,9 +29,9 @@ public class ComplexityAgent {
         this.objectMapper = new ObjectMapper();
     }
 
-    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+    public AgentResult analyze(String prTitle, String prDescription, String diff, String learningContext) {
         try {
-            String systemPrompt = buildSystemPrompt();
+            String systemPrompt = buildSystemPrompt() + (learningContext != null ? learningContext : "");
 
             String userPrompt = String.format(
                 "PR Title: %s\n\nPR Description: %s\n\nDiff:\n%s",
@@ -45,7 +46,7 @@ public class ComplexityAgent {
             );
 
             LlmOptions options = new LlmOptions(
-                System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+                System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL),
                 0.2,
                 "json_object"
             );
@@ -62,35 +63,11 @@ public class ComplexityAgent {
         }
     }
 
+    public AgentResult analyze(String prTitle, String prDescription, String diff) {
+        return analyze(prTitle, prDescription, diff, null);
+    }
+
     private String buildSystemPrompt() {
-        return "You are a Complexity Reviewer analyzing pull request diffs.\n\n" +
-               "Estimate quantitative cyclomatic and cognitive complexity for the changed code.\n\n" +
-               "Guidelines:\n" +
-               "- Cyclomatic Complexity: count of decision paths (if/else, switch cases, loops, boolean operators)\n" +
-               "- Cognitive Complexity: mental effort including nesting, recursion, and logical branching\n" +
-               "- Base your metrics on the diff, not the whole codebase\n\n" +
-               "Risk Level Guidelines:\n" +
-               "- LOW: Both metrics <= 10\n" +
-               "- MEDIUM: Any metric between 11-20\n" +
-               "- HIGH: Any metric > 20\n\n" +
-               "Recommendation Guidelines:\n" +
-               "- APPROVE: LOW complexity\n" +
-               "- REQUEST_CHANGES: MEDIUM complexity with refactor suggestions\n" +
-               "- BLOCK: HIGH complexity that risks maintainability\n\n" +
-               "CRITICAL REQUIREMENTS:\n" +
-               "- Include numeric metrics in findings\n" +
-               "- Provide Cyclomatic and Cognitive complexity as separate findings\n" +
-               "- Add one brief finding explaining the main complexity driver\n\n" +
-               "Respond ONLY with valid JSON matching this exact structure:\n" +
-               "{\n" +
-               "  \"agentName\": \"Complexity\",\n" +
-               "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
-               "  \"recommendation\": \"APPROVE|REQUEST_CHANGES|BLOCK\",\n" +
-               "  \"findings\": [\n" +
-               "    \"Cyclomatic Complexity: 8\",\n" +
-               "    \"Cognitive Complexity: 12\",\n" +
-               "    \"Primary driver: nested if-else statements\"\n" +
-               "  ]\n" +
-               "}";
+        return PromptLoader.loadPrompt("complexity");
     }
 }
