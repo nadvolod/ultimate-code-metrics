@@ -20,7 +20,7 @@ export default function ReportsPage() {
           throw new Error("Failed to fetch reviews")
         }
         const data = await response.json()
-        setReports(data)
+        setReports(data.data ?? [])
       } catch (err) {
         console.error("Error fetching reviews:", err)
         setError(err instanceof Error ? err.message : "Failed to load reviews")
