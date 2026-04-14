@@ -1,0 +1,80 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "java/temporal-review/src/main/java/com/utm/temporal/workflow/PRReviewWorkflowImpl.java @@ -119,6 +119,19 @@: Hidden side effects / temporal coupling. The workflow now reads `OPENAI_MODEL` via `Workflow.sideEffect(...)` and then derives cost from it, but the diff does not show any validation or fallback handling for unexpected model strings. Smallest refactoring: Extract Function for model resolution and make the pricing lookup explicit/total, or Introduce Parameter Object for pricing metadata. Evidence: `String model = Workflow.sideEffect(... System.getenv().getOrDefault(\"OPENAI_MODEL\", OpenAiLlmClient.DEFAULT_MODEL) ...)` and `estimateCost(model, totalPrompt, totalCompletion);`",
+        "java/temporal-review/src/main/java/com/utm/temporal/llm/LlmClient.java @@ -15,4 +15,10 @@: Interface bloat / leaky abstraction. Adding `getLastPromptTokens()` and `getLastCompletionTokens()` couples every client implementation to mutable per-call state, but the diff only shows default zero implementations, so not enough context in diff to assess thread-safety or correctness across concurrent calls. Smallest refactoring: Introduce Parameter Object or return a richer response type from `chat(...)` instead of querying hidden state after the fact. Evidence: `default int getLastPromptTokens() { return 0; }` and `default int getLastCompletionTokens() { return 0; }`",
+        "java/temporal-review/src/main/java/com/utm/temporal/agent/CodeQualityAgent.java @@ -58,7 +58,10 @@ and similar agent hunks: Repeated type-switching / duplication. The same token-copying logic is duplicated across five agents, which will likely grow and drift. Smallest refactoring: Extract Function or Move Method into a shared helper that maps `LlmClient` usage into `AgentResult`. Evidence: `result.promptTokens = llmClient.getLastPromptTokens(); result.completionTokens = llmClient.getLastCompletionTokens();`",
+        "java/temporal-review/src/main/java/com/utm/temporal/model/Metadata.java @@ -4,9 +4,12 @@ and .github/workflows/pr-review.yml @@ -145,11 +151,16 @@: Primitive obsession / mixed responsibilities. `Metadata` now carries raw token counts plus `estimatedCost`, and the workflow formats cost directly in the comment layer. Not enough context in diff to assess whether this data is used elsewhere, but the new fields mix transport, accounting, and presentation concerns. Smallest refactoring: Introduce Value Object for usage/cost and keep formatting in the presentation layer only. Evidence: `public int totalPromptTokens; public int totalCompletionTokens; public Double estimatedCost;` and `const cost = fmtCost(meta.estimatedCost);`"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The PR introduces new token/cost tracking logic, workflow-side model resolution, and footer rendering changes, but there are no tests covering the new behavior.",
+        "Test Suggestion 1: Add a unit test for PRReviewWorkflowImpl.estimateCost() covering each pricing branch (gpt-4o-mini, gpt-4o, gpt-4.1-mini, gpt-4.1, and unknown/default) to verify the correct per-1M-token rates and rounding-sensitive outputs.",
+        "Test Suggestion 2: Add an integration/unit test for the workflow aggregation path that feeds multiple AgentResult objects with prompt/completion token counts and asserts Metadata.totalPromptTokens, Metadata.totalCompletionTokens, and estimatedCost are summed and populated correctly.",
+        "Test Suggestion 3: Add a test for the GitHub comment footer formatting to verify fmtCost() behavior for null, zero, sub-cent, and normal costs, ensuring the cost segment is omitted when appropriate and rendered with the expected precision when present."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected. The changes add LLM token/cost tracking and surface estimated cost in the PR comment footer without exposing secrets, weakening authorization, or introducing unsafe input handling.",
+        "The new `estimateCost(String model, int promptTokens, int completionTokens)` logic in `PRReviewWorkflowImpl` uses only the model name and token counts from internal LLM responses; no user-controlled data reaches a dangerous sink."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Cyclomatic Complexity: 13",
+        "Cognitive Complexity: 14",
+        "Primary driver: added multi-branch model pricing logic in estimateCost() plus new conditional formatting and token aggregation paths"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: New LLM cost/token tracking and workflow-side model pricing logic are untested, including pricing branches, aggregation, and footer formatting [TestQuality] - Add unit/integration tests for estimateCost(), metadata aggregation, and fmtCost() behavior before merge.",
+        "P2: Model resolution and pricing lookup rely on side-effected environment-derived strings without explicit validation/fallback handling for unexpected model values [CodeQuality] - Make pricing lookup total and add an explicit default/validation path for unknown models.",
+        "P2: Token count accessors add mutable per-call state to the LlmClient abstraction, which can be fragile across implementations and concurrent calls [CodeQuality] - Prefer returning usage data from chat() in a response object instead of querying hidden state afterward.",
+        "P2: Token/cost fields are spread across Metadata and comment formatting, mixing transport, accounting, and presentation concerns [CodeQuality] - Introduce a dedicated usage/cost value object and keep formatting in the presentation layer.",
+        "P2: Token-copying logic is duplicated across multiple agents, increasing drift risk [CodeQuality] - Extract a shared helper to map LlmClient usage into AgentResult.",
+        "P2: Added pricing branches and footer formatting increase complexity, making the workflow harder to maintain [Complexity] - Consider extracting pricing and formatting helpers to reduce branching in the workflow."
+      ],
+      "promptTokens": 1499,
+      "completionTokens": 322
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-13T19:06:25.179Z",
+    "tookMs": 14258,
+    "model": "gpt-5.4-mini",
+    "totalPromptTokens": 1499,
+    "totalCompletionTokens": 322,
+    "estimatedCost": 0.00041804999999999994
+  },
+  "prNumber": 63,
+  "prTitle": "Add LLM cost tracking to PR review comments",
+  "author": "nadvolod"
+}
