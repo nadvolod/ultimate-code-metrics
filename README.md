@@ -216,7 +216,7 @@ The `RunReview` CLI uses these exit codes:
 
 ## Key Dependencies
 
-- **Temporal SDK**: 1.24.1
+- **Temporal SDK**: 1.34.0
 - **OkHttp**: 4.12.0 (for OpenAI API calls)
 - **Jackson**: 2.15.3 (for JSON serialization)
 - **SLF4J**: 2.0.9 (for logging)

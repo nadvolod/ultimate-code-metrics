@@ -18,7 +18,7 @@ Ultimate Test Metrics is an AI-powered PR review orchestration system built on T
 
 ### Backend
 - **Java 11+** with Maven 3.6+
-- **Temporal SDK 1.24.1** for workflow orchestration
+- **Temporal SDK 1.34.0** for workflow orchestration
 - **OkHttp 4.12.0** for HTTP client
 - **Jackson 2.15.3** for JSON serialization
 - **SLF4J 2.0.9** for logging
