@@ -1,0 +1,77 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "[MEDIUM] Mixed abstraction levels / leaky boundary in startup config: `AppConfig.validate()` both validates, caches state, and prints configuration to stdout, while `WorkerApp.main()` also handles startup failure. Consider Extract Function and Separate Query from Modifier so validation, caching, and logging are distinct responsibilities. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/config/AppConfig.java` @@ -1,0 +1,215 @@ `System.out.println(\"Configuration:\");` / `validated = true;` / `throw new IllegalStateException(...)`; and `java/temporal-review/src/main/java/com/utm/temporal/WorkerApp.java` @@ -46,6 +47,14 @@ `try { AppConfig.validate(); } catch (IllegalStateException e) { ... }`",
+        "[MEDIUM] Static global configuration state creates hidden coupling and temporal coupling: workflow code now depends on `AppConfig.get*()` reading cached static fields initialized by a one-time startup call. This is fragile if any code path accesses getters before `validate()`, and it makes tests/order of initialization matter. Consider Introduce Parameter Object or pass resolved config into the workflow/activity wiring instead of relying on mutable static singletons. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/config/AppConfig.java` @@ -1,0 +1,215 @@ `private static volatile String temporalAddress; ... private static volatile boolean validated = false;` / `ensureValidated();`; and `java/temporal-review/src/main/java/com/utm/temporal/workflow/PRReviewWorkflowImpl.java` @@ -17,12 +18,15 @@ `private static final ActivityOptions ACTIVITY_OPTIONS = ActivityOptions.newBuilder() ... AppConfig.getActivityTimeoutSeconds()`",
+        "[LOW] Naming inconsistency / noise word in boolean accessor: `isDummyMode()` is acceptable, but the backing env var and comments use `DUMMY_MODE` while the class mixes `openAiModel` with `OPENAI_MODEL`. Not enough context in diff to assess whether the domain term should be `dummy`, `mock`, or `test` mode, but the naming should be made consistent across the config API. Consider Rename Method/Field to use one domain term consistently. Evidence: `java/temporal-review/src/main/java/com/utm/temporal/config/AppConfig.java` @@ -1,0 +1,215 @@ `private static volatile boolean dummyMode;` / `public static boolean isDummyMode()` / `OPENAI_API_KEY is required unless DUMMY_MODE=true`"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new startup validation, environment-driven configuration, and workflow/activity behavior changes, but the existing test file does not meaningfully exercise the new failure paths or integration behavior. Coverage is mostly constant checks and conditional no-ops, so the new logic is not adequately tested.",
+        "Test Suggestion 1: Add a startup validation test that clears OPENAI_API_KEY and sets DUMMY_MODE=false, then asserts WorkerApp/AppConfig exits with a clear IllegalStateException message. This verifies the new fail-fast behavior for required configuration and the exact error path.",
+        "Test Suggestion 2: Add parameterized tests for invalid numeric env vars (e.g., ACTIVITY_TIMEOUT_SECONDS=0, -1, and non-numeric; same for ACTIVITY_RETRY_INTERVAL_SECONDS) and assert validation fails with the expected message. This covers boundary conditions and ensures invalid config cannot reach workflow startup.",
+        "Test Suggestion 3: Add an integration-style test that sets TEMPORAL_ADDRESS, TASK_QUEUE, and OPENAI_MODEL, runs validation, and verifies PRReviewWorkflowImpl/WorkerApp use the cached values in workflow options and recorded outcome. This confirms the config is actually wired through the worker and workflow data flow, not just parsed."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected. The new AppConfig validation and caching logic does not expose secrets, weaken authorization, or introduce unsafe input handling. The added logging prints configuration values such as TEMPORAL_ADDRESS, TASK_QUEUE, and OPENAI_MODEL, but does not log sensitive credentials like OPENAI_API_KEY."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Cyclomatic Complexity: 14",
+        "Cognitive Complexity: 16",
+        "Primary driver: startup validation and config resolution logic with multiple conditional branches and exception handling in AppConfig.validate()"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: Startup validation and config wiring are not adequately covered by tests; add fail-fast tests for missing OPENAI_API_KEY when DUMMY_MODE=false, invalid numeric env vars, and an integration-style test that verifies resolved config is actually used by WorkerApp/PRReviewWorkflowImpl [TestQuality] - Add focused tests for the new startup validation and workflow wiring paths",
+        "P1: Static global config state creates hidden coupling and order-dependent behavior; accessing AppConfig getters before validate() or across tests can fail unpredictably [CodeQuality] - Refactor toward injected/resolved config instead of mutable static singletons",
+        "P2: AppConfig.validate() mixes validation, caching, and stdout logging, which makes the startup path harder to reason about and maintain [CodeQuality] - Split validation from side effects and move logging to a separate startup concern",
+        "P2: Validation logic has relatively high cyclomatic/cognitive complexity, increasing the chance of edge-case bugs as config rules evolve [Complexity] - Extract smaller helper methods for parsing, required-field checks, and error construction",
+        "P3: Naming is inconsistent around dummy/test mode terminology, which adds minor API noise [CodeQuality] - Standardize the config field/method/env-var naming on one domain term"
+      ],
+      "promptTokens": 1458,
+      "completionTokens": 279
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-14T10:21:42.694Z",
+    "tookMs": 14138,
+    "model": "gpt-5.4-mini",
+    "totalPromptTokens": 1458,
+    "totalCompletionTokens": 279,
+    "estimatedCost": 0.0003861
+  },
+  "prNumber": 58,
+  "prTitle": "Add startup environment variable validation and centralize configuration",
+  "author": "Copilot"
+}
