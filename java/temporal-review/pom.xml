@@ -18,17 +18,27 @@
 
     <properties>
         <temporal.version>1.30.1</temporal.version>
-        <!-- Override grpc-netty-shaded to address GHSA-prj3-ccx8-p6x4 (HTTP/2 MadeYouReset DoS).
-             1.73.0 is the latest available; full remediation requires >=1.75.0 (not yet released).
-             Validate runtime compatibility with Temporal before upgrading further. -->
+        <!--
+          RESIDUAL RISK — GHSA-prj3-ccx8-p6x4 (CVE-2025-55163, HTTP/2 MadeYouReset DDoS):
+          temporal-sdk 1.30.1 bundles grpc-netty-shaded 1.73.0, which is still vulnerable.
+          Full remediation requires grpc-netty-shaded >= 1.75.0, which is not yet published on
+          Maven Central (latest as of 2026-04-14: 1.73.0). This pin is a placeholder — update
+          grpc.version to 1.75.0 (or later) once it is available, then validate runtime
+          compatibility with Temporal before releasing.
+          Interim mitigation: apply WAF rules, rate-limiting, or HTTP/2 connection limits at
+          the network layer to reduce exposure until the library upgrade can be completed.
+        -->
         <grpc.version>1.73.0</grpc.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Force grpc-netty-shaded to override the version bundled by temporal-sdk.
-                 Addresses GHSA-prj3-ccx8-p6x4 (partial: requires >=1.75.0 for full fix),
-                 GHSA-9hxf-ppjv-w6rq, and GHSA-cfgp-2977-2fmm. -->
+            <!--
+              Pin grpc-netty-shaded so the version is explicit and easily upgraded.
+              Update grpc.version above to >= 1.75.0 once that release is available to
+              fully remediate GHSA-prj3-ccx8-p6x4. The 1.73.0 pin matches what
+              temporal-sdk 1.30.1 already brings transitively; it does NOT fix MadeYouReset.
+            -->
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty-shaded</artifactId>
