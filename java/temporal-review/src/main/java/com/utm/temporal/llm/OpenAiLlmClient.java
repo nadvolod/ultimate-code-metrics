@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -18,11 +19,21 @@ public class OpenAiLlmClient implements LlmClient {
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
+    /** Default maximum number of characters allowed in a user message (diff) before truncation. */
+    public static final int DEFAULT_MAX_DIFF_CHARS = 100_000;
+    private static final String TRUNCATION_NOTICE =
+            "\n\n[TRUNCATED: Diff exceeded the configured size limit. Analysis is based on the first %d characters only.]";
+
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String baseUrl;
     private final boolean dummyMode;
+    private final int maxDiffChars;
+
+    // Token usage from the last API call
+    private int lastPromptTokens;
+    private int lastCompletionTokens;
 
     public OpenAiLlmClient() {
         this.objectMapper = new ObjectMapper();
@@ -37,9 +48,32 @@ public class OpenAiLlmClient implements LlmClient {
         this.baseUrl = System.getenv().getOrDefault("OPENAI_BASE_URL", DEFAULT_BASE_URL);
         this.dummyMode = "true".equalsIgnoreCase(System.getenv().getOrDefault("DUMMY_MODE", "false"));
 
+        String maxDiffCharsEnv = System.getenv().getOrDefault("MAX_DIFF_CHARS", String.valueOf(DEFAULT_MAX_DIFF_CHARS));
+        try {
+            this.maxDiffChars = Integer.parseInt(maxDiffCharsEnv);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("MAX_DIFF_CHARS environment variable must be a valid integer, got: " + maxDiffCharsEnv);
+        }
+        if (this.maxDiffChars <= 0) {
+            throw new IllegalStateException("MAX_DIFF_CHARS environment variable must be a positive integer, got: " + this.maxDiffChars);
+        }
+
         if (!dummyMode && apiKey.isEmpty()) {
             throw new IllegalStateException("OPENAI_API_KEY environment variable is required when DUMMY_MODE is not enabled");
         }
+    }
+
+    /** Package-private constructor for unit testing with a custom diff size limit. */
+    OpenAiLlmClient(int maxDiffChars) {
+        if (maxDiffChars <= 0) {
+            throw new IllegalArgumentException("maxDiffChars must be a positive integer, got: " + maxDiffChars);
+        }
+        this.objectMapper = new ObjectMapper();
+        this.httpClient = null;
+        this.apiKey = "";
+        this.baseUrl = DEFAULT_BASE_URL;
+        this.dummyMode = true;
+        this.maxDiffChars = maxDiffChars;
     }
 
     @Override
@@ -49,8 +83,11 @@ public class OpenAiLlmClient implements LlmClient {
         }
 
         try {
+            // Truncate user message content that exceeds the configured diff size limit
+            List<Message> effectiveMessages = applyDiffSizeLimit(messages);
+
             // Build request JSON
-            String requestBody = buildRequestBody(messages, options);
+            String requestBody = buildRequestBody(effectiveMessages, options);
 
             // Make HTTP call to OpenAI
             Request request = new Request.Builder()
@@ -72,6 +109,40 @@ public class OpenAiLlmClient implements LlmClient {
             // No retry logic - fail fast!
             throw new RuntimeException("OpenAI API call failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Returns a copy of the message list with user message content truncated to
+     * {@code maxDiffChars} characters. A truncation notice is appended so the LLM
+     * knows the input was cut off.
+     */
+    List<Message> applyDiffSizeLimit(List<Message> messages) {
+        List<Message> result = new ArrayList<>(messages.size());
+        for (Message msg : messages) {
+            if ("user".equals(msg.role) && msg.content != null && msg.content.length() > maxDiffChars) {
+                String truncated = truncateDiff(msg.content, maxDiffChars);
+                result.add(new Message(msg.role, truncated));
+            } else {
+                result.add(msg);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Truncates {@code content} so that the total output (prefix + notice) is at most
+     * {@code maxChars} characters. Visible for testing.
+     */
+    static String truncateDiff(String content, int maxChars) {
+        if (content == null || content.length() <= maxChars) {
+            return content;
+        }
+        String notice = String.format(TRUNCATION_NOTICE, maxChars);
+        if (notice.length() >= maxChars) {
+            return content.substring(0, maxChars);
+        }
+        int prefixLen = maxChars - notice.length();
+        return content.substring(0, prefixLen) + notice;
     }
 
     private String buildRequestBody(List<Message> messages, LlmOptions options) throws IOException {
@@ -99,6 +170,10 @@ public class OpenAiLlmClient implements LlmClient {
     }
 
     private String parseResponse(String responseBody) throws IOException {
+        // Reset counters to avoid leaking stale values from a previous call
+        this.lastPromptTokens = 0;
+        this.lastCompletionTokens = 0;
+
         JsonNode root = objectMapper.readTree(responseBody);
         JsonNode content = root.path("choices").path(0).path("message").path("content");
 
@@ -106,7 +181,24 @@ public class OpenAiLlmClient implements LlmClient {
             throw new IOException("Invalid OpenAI API response: missing 'choices[0].message.content'");
         }
 
+        // Capture token usage from response
+        JsonNode usage = root.path("usage");
+        if (!usage.isMissingNode()) {
+            this.lastPromptTokens = usage.path("prompt_tokens").asInt(0);
+            this.lastCompletionTokens = usage.path("completion_tokens").asInt(0);
+        }
+
         return content.asText();
+    }
+
+    @Override
+    public int getLastPromptTokens() {
+        return lastPromptTokens;
+    }
+
+    @Override
+    public int getLastCompletionTokens() {
+        return lastCompletionTokens;
     }
 
     /**
@@ -120,7 +212,23 @@ public class OpenAiLlmClient implements LlmClient {
                 .findFirst()
                 .orElse("");
 
-        if (systemMessage.contains("code quality")) {
+        if (systemMessage.contains("product owner") || systemMessage.contains("triages and prioritizes")) {
+            return "{\n" +
+                   "  \"triageDate\": \"2026-03-30T00:00:00Z\",\n" +
+                   "  \"totalIssues\": 5,\n" +
+                   "  \"summary\": \"Backlog has a mix of security, testing, and feature work. Security and testing gaps are highest priority.\",\n" +
+                   "  \"issues\": [\n" +
+                   "    {\"number\": 17, \"title\": \"Mitigate script injection\", \"priority\": \"P0\", \"category\": \"security\", \"effort\": \"S\", \"blockedBy\": [], \"rationale\": \"Active security vulnerability in CI pipeline\"},\n" +
+                   "    {\"number\": 16, \"title\": \"Address HIGH severity vulnerabilities\", \"priority\": \"P1\", \"category\": \"security\", \"effort\": \"M\", \"blockedBy\": [], \"rationale\": \"Known CVEs in transitive dependencies\"},\n" +
+                   "    {\"number\": 4, \"title\": \"Guard against unexpected status values\", \"priority\": \"P2\", \"category\": \"code-quality\", \"effort\": \"S\", \"blockedBy\": [], \"rationale\": \"Quick win - prevents runtime crashes\"},\n" +
+                   "    {\"number\": 3, \"title\": \"Update site metadata\", \"priority\": \"P3\", \"category\": \"UX\", \"effort\": \"S\", \"blockedBy\": [], \"rationale\": \"Cosmetic but aligns branding with actual functionality\"},\n" +
+                   "    {\"number\": 10, \"title\": \"Unused testSummary parameter\", \"priority\": \"P3\", \"category\": \"code-quality\", \"effort\": \"S\", \"blockedBy\": [], \"rationale\": \"Dead code removal\"}\n" +
+                   "  ],\n" +
+                   "  \"recommendedOrder\": [17, 16, 4, 10, 3],\n" +
+                   "  \"quickWins\": [17, 4, 10, 3],\n" +
+                   "  \"riskAreas\": [\"CI/CD pipeline security\", \"Dependency management\", \"Frontend error handling\"]\n" +
+                   "}";
+        } else if (systemMessage.contains("code quality")) {
             return "{\n" +
                    "  \"agentName\": \"Code Quality\",\n" +
                    "  \"riskLevel\": \"LOW\",\n" +

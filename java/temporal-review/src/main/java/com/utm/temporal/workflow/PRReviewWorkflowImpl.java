@@ -3,6 +3,7 @@ package com.utm.temporal.workflow;
 import com.utm.temporal.activity.*;
 import com.utm.temporal.config.AppConfig;
 import com.utm.temporal.learning.HeuristicsEngine;
+import com.utm.temporal.llm.OpenAiLlmClient;
 import com.utm.temporal.model.*;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -122,6 +123,19 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
 
             // 7. Build response
             long tookMs = Workflow.currentTimeMillis() - startMs;
+            // Workflow.sideEffect makes env reads replay-safe
+            String model = Workflow.sideEffect(
+                    String.class,
+                    () -> System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL)
+            );
+
+            // Sum token usage across all agents
+            int totalPrompt = 0;
+            int totalCompletion = 0;
+            for (AgentResult r : results) {
+                totalPrompt += r.promptTokens;
+                totalCompletion += r.completionTokens;
+            }
 
             // Record outcome to DB (failure here never breaks the review)
             if (request.repository != null) {
@@ -147,8 +161,11 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             Metadata metadata = new Metadata(
                     Instant.ofEpochMilli(Workflow.currentTimeMillis()).toString(),
                     tookMs,
-                    AppConfig.getOpenAiModel()
+                    model
             );
+            metadata.totalPromptTokens = totalPrompt;
+            metadata.totalCompletionTokens = totalCompletion;
+            metadata.estimatedCost = estimateCost(model, totalPrompt, totalCompletion);
 
             ReviewResponse response = new ReviewResponse(
                     overall,
@@ -172,7 +189,34 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         }
 
     }
-    private String aggregate(List<AgentResult> results) {
+    /**
+     * Estimate cost in USD based on model and token counts.
+     * Pricing per 1M tokens (as of 2025):
+     *   gpt-4o-mini:  input $0.15,  output $0.60
+     *   gpt-4o:       input $2.50,  output $10.00
+     *   gpt-4.1-mini: input $0.40,  output $1.60
+     *   gpt-4.1:      input $2.00,  output $8.00
+     *   gpt-5.4-mini: input $0.40,  output $1.60
+     */
+    static double estimateCost(String model, int promptTokens, int completionTokens) {
+        double inputPer1M;
+        double outputPer1M;
+        if (model != null && model.contains("4o-mini")) {
+            inputPer1M = 0.15; outputPer1M = 0.60;
+        } else if (model != null && model.contains("4o")) {
+            inputPer1M = 2.50; outputPer1M = 10.00;
+        } else if (model != null && model.contains("4.1-mini")) {
+            inputPer1M = 0.40; outputPer1M = 1.60;
+        } else if (model != null && model.contains("4.1")) {
+            inputPer1M = 2.00; outputPer1M = 8.00;
+        } else {
+            // Default to gpt-4o-mini pricing for unknown models
+            inputPer1M = 0.15; outputPer1M = 0.60;
+        }
+        return (promptTokens * inputPer1M + completionTokens * outputPer1M) / 1_000_000.0;
+    }
+
+    static String aggregate(List<AgentResult> results) {
         // Check for BLOCK
         for (AgentResult result : results) {
             if ("BLOCK".equals(result.recommendation)) {
