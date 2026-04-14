@@ -26,10 +26,12 @@ class OpenAiLlmClientTest {
     }
 
     @Test
-    void truncateDiff_contentExceedsLimit_startsWithTruncatedPrefix() {
-        String content = "a".repeat(200);
-        String result = OpenAiLlmClient.truncateDiff(content, 100);
-        assertTrue(result.startsWith("a".repeat(100)), "Result should start with first 100 chars");
+    void truncateDiff_contentExceedsLimit_isTruncatedWithinLimit() {
+        String content = "a".repeat(500);
+        String result = OpenAiLlmClient.truncateDiff(content, 200);
+        assertNotEquals(content, result, "Result should differ from the original when content exceeds the limit");
+        assertTrue(result.contains("[TRUNCATED:"), "Result should contain truncation notice");
+        assertTrue(result.length() <= 200, "Total output (prefix + notice) should not exceed maxChars");
     }
 
     @Test
@@ -63,16 +65,17 @@ class OpenAiLlmClientTest {
 
     @Test
     void applyDiffSizeLimit_userMessageExceedsLimit_isTruncatedWithNotice() {
-        OpenAiLlmClient client = new OpenAiLlmClient(20);
-        String content = "a".repeat(100);
+        OpenAiLlmClient client = new OpenAiLlmClient(200);
+        String content = "a".repeat(500);
         List<Message> messages = Arrays.asList(
                 new Message("system", "system prompt"),
                 new Message("user", content)
         );
         List<Message> result = client.applyDiffSizeLimit(messages);
         String userContent = result.get(1).content;
-        assertTrue(userContent.startsWith("a".repeat(20)), "Truncated content should start with first 20 chars");
+        assertNotEquals(content, userContent, "Truncated content should differ from the original");
         assertTrue(userContent.contains("[TRUNCATED:"), "Truncated content should include a notice");
+        assertTrue(userContent.length() <= 200, "Total output should not exceed maxDiffChars");
     }
 
     @Test

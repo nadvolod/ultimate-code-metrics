@@ -126,14 +126,19 @@ public class OpenAiLlmClient implements LlmClient {
     }
 
     /**
-     * Truncates {@code content} to at most {@code maxChars} characters and appends a
-     * notice explaining the truncation. Visible for testing.
+     * Truncates {@code content} so that the total output (prefix + notice) is at most
+     * {@code maxChars} characters. Visible for testing.
      */
     static String truncateDiff(String content, int maxChars) {
         if (content == null || content.length() <= maxChars) {
             return content;
         }
-        return content.substring(0, maxChars) + String.format(TRUNCATION_NOTICE, maxChars);
+        String notice = String.format(TRUNCATION_NOTICE, maxChars);
+        if (notice.length() >= maxChars) {
+            return content.substring(0, maxChars);
+        }
+        int prefixLen = maxChars - notice.length();
+        return content.substring(0, prefixLen) + notice;
     }
 
     private String buildRequestBody(List<Message> messages, LlmOptions options) throws IOException {
