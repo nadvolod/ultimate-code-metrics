@@ -54,23 +54,23 @@
       "riskLevel": "HIGH",
       "recommendation": "REQUEST_CHANGES",
       "findings": [
-        "P1: Missing tests for new error-handling branches and retry logic in both the API route and the Java OpenAI client [TestQuality] - Add tests to cover new behaviors introduced by the changes.",
-        "P1: Mixed abstraction in retry logic complicates the core request flow in OpenAiLlmClient.java [CodeQuality] - Refactor to extract retry/backoff handling into a separate function.",
-        "P1: Exception misuse for control flow in OpenAiLlmClient.java makes error handling brittle [CodeQuality] - Introduce a domain-specific exception hierarchy for better clarity.",
-        "P2: Naming issue with generic helper name `errorResponse` in app/api/reviews/route.ts [CodeQuality] - Rename to a more specific verb-based name or introduce a shared error response type.",
+        "P1: Missing tests for new error-handling branches and retry logic in both the API route and Java client [TestQuality] - Add tests to cover new behaviors introduced by the changes.",
+        "P1: Mixed abstraction in retry logic complicates the request flow in `OpenAiLlmClient.java` [CodeQuality] - Refactor to extract retry/backoff handling into a separate function.",
+        "P1: Exception misuse for control flow in retry logic makes error handling brittle in `OpenAiLlmClient.java` [CodeQuality] - Introduce a domain-specific exception hierarchy for better clarity.",
+        "P2: Naming issue with the generic helper name `errorResponse` in `app/api/reviews/route.ts` [CodeQuality] - Rename to a more specific verb-based name or create a shared error response type.",
         "P2: High cyclomatic and cognitive complexity due to added retry loops and nested error handling [Complexity] - Consider simplifying the logic to improve maintainability."
       ],
       "promptTokens": 1354,
-      "completionTokens": 235
+      "completionTokens": 241
     }
   ],
   "metadata": {
-    "generatedAt": "2026-04-14T10:14:21.057Z",
-    "tookMs": 30367,
+    "generatedAt": "2026-04-14T10:22:10.802Z",
+    "tookMs": 25612,
     "model": "gpt-4o-mini",
     "totalPromptTokens": 1354,
-    "totalCompletionTokens": 235,
-    "estimatedCost": 0.0003441
+    "totalCompletionTokens": 241,
+    "estimatedCost": 0.0003477
   },
   "prNumber": 57,
   "prTitle": "Add structured error responses and retry logic with exponential backoff",
