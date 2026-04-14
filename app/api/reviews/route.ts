@@ -6,6 +6,16 @@ import type { BackendReviewResponse, FrontendRecommendation, TestReport } from "
 
 const REVIEWS_DIR = join(process.cwd(), "data", "reviews")
 
+interface ApiError {
+  error: string
+  code: string
+  message: string
+}
+
+function errorResponse(error: string, code: string, message: string, status: number): NextResponse<ApiError> {
+  return NextResponse.json({ error, code, message }, { status })
+}
+
 const VALID_SORT_FIELDS = ["date", "prNumber"] as const
 const VALID_SORT_DIRS = ["asc", "desc"] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
@@ -137,6 +147,7 @@ function applyFilters(
 }
 
 export async function GET(request: NextRequest) {
+
   try {
     const result = parseQueryOptions(request.nextUrl.searchParams)
     if ("error" in result) return result.error
@@ -146,9 +157,21 @@ export async function GET(request: NextRequest) {
     let files: string[]
     try {
       files = await readdir(REVIEWS_DIR)
-    } catch {
-      // Directory doesn't exist or is empty
-      return NextResponse.json({ data: [], total: 0, offset: 0 })
+    } catch (err) {
+      const nodeErr = err as NodeJS.ErrnoException
+      if (nodeErr.code === "ENOENT") {
+        // Directory doesn't exist - return empty list, not an error
+        return NextResponse.json({ data: [], total: 0, offset: 0 })
+      }
+      // Other filesystem errors (permissions, etc.)
+      console.error("Failed to read reviews directory:", err)
+      return errorResponse(
+        "Failed to read reviews directory",
+        "DIRECTORY_READ_ERROR",
+        "An unexpected error occurred while accessing the reviews directory.",
+        500,
+      )
+
     }
 
     const jsonFiles = files.filter((f) => f.endsWith(".json"))
@@ -166,9 +189,16 @@ export async function GET(request: NextRequest) {
         const content = await readFile(filePath, "utf-8")
         const response = JSON.parse(content) as BackendReviewResponse
         reviews.push({ response, filename })
-      } catch (error) {
-        console.error(`Failed to read/parse ${filename}:`, error)
-        // Skip invalid files
+      } catch (err) {
+        const nodeErr = err as NodeJS.ErrnoException
+        if (nodeErr.code === "ENOENT") {
+          console.warn(`Review file not found (skipping): ${filename}`)
+        } else if (err instanceof SyntaxError) {
+          console.error(`Failed to parse review file ${filename} (skipping): invalid JSON`)
+        } else {
+          console.error(`Failed to read/parse ${filename} (skipping):`, err)
+        }
+        // Skip invalid files and continue processing others
       }
     }
 
@@ -188,7 +218,12 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Failed to fetch reviews:", error)
-    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 })
+    return errorResponse(
+      "Failed to fetch reviews",
+      "INTERNAL_SERVER_ERROR",
+      "An unexpected error occurred while fetching review data.",
+      500,
+    )
   }
 }
 
