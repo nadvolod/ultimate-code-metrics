@@ -18,10 +18,12 @@ public class OpenAiLlmClient implements LlmClient {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAiLlmClient.class);
 
-    public static final String DEFAULT_MODEL = "gpt-5.4-mini";
+    public static final String DEFAULT_MODEL = "gpt-4o-mini";
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
+    // In-client retry handles transient OpenAI API errors (429, 5xx) before they bubble up
+    // to Temporal's activity-level retry, which would re-execute the entire activity.
     private static final int MAX_RETRIES = 3;
     private static final int TOTAL_ATTEMPTS = MAX_RETRIES + 1;
     private static final long INITIAL_BACKOFF_MS = 1000L;
@@ -61,8 +63,8 @@ public class OpenAiLlmClient implements LlmClient {
 
         for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
             if (attempt > 0) {
-                long backoffMs = Math.min(INITIAL_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS); // 2^(attempt-1) seconds
-                logger.warn("OpenAI API call failed (attempt {}), retrying in {}ms...", attempt, backoffMs);
+                long backoffMs = Math.min(INITIAL_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS); // Exponential backoff: INITIAL_BACKOFF_MS * 2^(attempt-1), capped at MAX_BACKOFF_MS
+                logger.warn("OpenAI API call failed (attempt {}), retrying in {}ms...", attempt + 1, backoffMs);
                 try {
                     Thread.sleep(backoffMs);
                 } catch (InterruptedException ie) {
@@ -85,6 +87,11 @@ public class OpenAiLlmClient implements LlmClient {
                     int statusCode = response.code();
 
                     if (response.isSuccessful()) {
+                        if (response.body() == null) {
+                            throw new RuntimeException(
+                                    "OpenAI API returned a successful response (HTTP " + statusCode +
+                                    ") but the response body was null");
+                        }
                         String responseBody = response.body().string();
                         return parseResponse(responseBody);
                     }
