@@ -32,6 +32,22 @@ async function buildETag(files: string[]): Promise<string> {
   return createHash("sha1").update(stats.join("|")).digest("hex")
 }
 
+/**
+ * Parse an If-None-Match header value and check if any of the ETags match.
+ * Handles weak ETags (W/"...") and comma-separated lists per RFC 7232.
+ */
+function etagMatches(ifNoneMatch: string | null, etag: string): boolean {
+  if (!ifNoneMatch) return false
+
+  // Strip W/ prefix for weak comparison
+  const normalise = (val: string) => val.trim().replace(/^W\//, "")
+  const target = normalise(etag)
+
+  return ifNoneMatch
+    .split(",")
+    .some((candidate) => normalise(candidate) === target)
+}
+
 function notModified(etag: string): NextResponse {
   return new NextResponse(null, {
     status: 304,
@@ -50,7 +66,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([], { headers: { "Cache-Control": CACHE_CONTROL } })
     }
 
-    const jsonFiles = files.filter((f) => f.endsWith(".json"))
+    const jsonFiles = files.filter((f) => f.endsWith(".json")).sort()
 
     if (jsonFiles.length === 0) {
       return NextResponse.json([], { headers: { "Cache-Control": CACHE_CONTROL } })
@@ -61,7 +77,7 @@ export async function GET(request: NextRequest) {
     // Fast path: return cached data while the TTL is still valid (no stat calls needed)
     if (cache && cache.expiresAt > now) {
       const ifNoneMatch = request.headers.get("if-none-match")
-      if (ifNoneMatch === cache.etag) {
+      if (etagMatches(ifNoneMatch, cache.etag)) {
         return notModified(cache.etag)
       }
       return NextResponse.json(cache.data, {
@@ -74,8 +90,16 @@ export async function GET(request: NextRequest) {
 
     // Honour conditional request before reading file contents
     const ifNoneMatch = request.headers.get("if-none-match")
-    if (ifNoneMatch === etag) {
+    if (etagMatches(ifNoneMatch, etag)) {
       return notModified(etag)
+    }
+
+    // If the ETag hasn't changed since last cache, reuse cached data (skip file I/O)
+    if (cache && cache.etag === etag) {
+      cache.expiresAt = now + CACHE_MAX_AGE * 1000
+      return NextResponse.json(cache.data, {
+        headers: { ETag: etag, "Cache-Control": CACHE_CONTROL },
+      })
     }
 
     // Read and parse each review file
