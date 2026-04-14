@@ -11,6 +11,7 @@ import com.utm.temporal.agent.CodeQualityAgent;
 import com.utm.temporal.agent.PriorityAgent;
 import com.utm.temporal.agent.SecurityAgent;
 import com.utm.temporal.agent.TestQualityAgent;
+import com.utm.temporal.config.AppConfig;
 import com.utm.temporal.db.DatabaseClient;
 import com.utm.temporal.model.ReviewRequest;
 import com.utm.temporal.model.ReviewResponse;
@@ -20,6 +21,7 @@ import com.utm.temporal.workflow.PRReviewWorkflowImpl;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 
@@ -36,13 +38,20 @@ import io.temporal.worker.WorkerFactory;
  * 3 - File I/O error
  */
 public class WorkerApp {
-    private static final String TASK_QUEUE = "pr-review";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
         // Validate arguments
         if (args.length != 2) {
             System.err.println("Usage: RunReview <input-json-path> <output-json-path>");
+            System.exit(1);
+        }
+
+        // Validate environment variables at startup — fail fast with clear messages
+        try {
+            AppConfig.validate();
+        } catch (IllegalStateException e) {
+            System.err.println(e.getMessage());
             System.exit(1);
         }
 
@@ -62,15 +71,26 @@ public class WorkerApp {
             ReviewRequest request = objectMapper.readValue(inputJson, ReviewRequest.class);
 
             DatabaseClient dbClient = new DatabaseClient();
-            // Connect to Temporal server
-            System.out.println("Connecting to Temporal server...");
-            WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+
+            // Connect to Temporal server using configurable address
+            String temporalAddress = AppConfig.getTemporalAddress();
+            System.out.println("Connecting to Temporal server at " + temporalAddress + "...");
+            WorkflowServiceStubs service;
+            if (AppConfig.DEFAULT_TEMPORAL_ADDRESS.equals(temporalAddress)) {
+                service = WorkflowServiceStubs.newLocalServiceStubs();
+            } else {
+                service = WorkflowServiceStubs.newServiceStubs(
+                        WorkflowServiceStubsOptions.newBuilder()
+                                .setTarget(temporalAddress)
+                                .build());
+            }
             WorkflowClient client = WorkflowClient.newInstance(service);
 
             // Create and start worker in background
+            String taskQueue = AppConfig.getTaskQueue();
             System.out.println("Starting Temporal worker...");
             WorkerFactory factory = WorkerFactory.newInstance(client);
-            Worker worker = factory.newWorker(TASK_QUEUE);
+            Worker worker = factory.newWorker(taskQueue);
 
             // Register workflow implementation
             worker.registerWorkflowImplementationTypes(PRReviewWorkflowImpl.class);
@@ -97,11 +117,11 @@ public class WorkerApp {
 
             // Create workflow stub and execute
             System.out.println("Starting workflow execution...");
-            String workflowId = TASK_QUEUE + "-" + UUID.randomUUID();
+            String workflowId = taskQueue + "-" + UUID.randomUUID();
             PRReviewWorkflow workflow = client.newWorkflowStub(
                     PRReviewWorkflow.class,
                     WorkflowOptions.newBuilder()
-                            .setTaskQueue(TASK_QUEUE)
+                            .setTaskQueue(taskQueue)
                             .setWorkflowId(workflowId)
                             .build());
 
