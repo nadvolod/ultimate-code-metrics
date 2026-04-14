@@ -3,9 +3,13 @@
   "agents": [
     {
       "agentName": "Code Quality",
-      "riskLevel": "LOW",
-      "recommendation": "APPROVE",
-      "findings": [],
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "app/api/reviews/route.ts @@ -157,18 +184,55 @@ — Hidden side effects / temporal coupling: the GET handler now mutates module-level `cache` state (`let cache: CacheEntry | null = null`, `cache.expiresAt = ...`, `cache = { ... }`) while also serving request-specific pagination. This creates shared state across requests and makes behavior depend on request order. Smallest refactoring: Extract Cache Manager / Wrap the cache behind a dedicated function or object so the handler stays a pure request processor. Evidence: `let cache: CacheEntry | null = null` and `cache.expiresAt = Date.now() + CACHE_MAX_AGE * 1000` / `cache = { etag, data: reviews, expiresAt: ... }`.",
+        "app/api/reviews/route.ts @@ -157,18 +184,55 @@ — Mixed abstraction levels: the GET handler now combines filesystem metadata collection (`stat`), HTTP validator generation (`buildETag`), conditional request handling (`If-None-Match` / 304), cache refresh logic, file parsing, sorting, and pagination in one block. Smallest refactoring: Extract Function for ETag/cache decision flow and Extract Function for file loading so the route handler only orchestrates. Evidence: `const fileStat = await stat(filePath)`, `const ifNoneMatch = request.headers.get(\"If-None-Match\")`, `if (cache?.etag === etag) { ... } else { ... readFile ... JSON.parse ... }`.",
+        "app/api/reviews/route.ts @@ -1,11 +38,38 @@ — Not enough context in diff to assess whether the new `etagMatches` helper correctly handles all valid `If-None-Match` forms beyond the shown cases. The comment claims RFC 7232 compliance, but the implementation only strips `W/` and splits on commas. If this helper is kept, rename/comment it to match the exact supported behavior or extract a dedicated parser. Evidence: `/** RFC 7232 compliant ETag matching: handles \\\\`*\\\\`, strips \\\\`W/\\\\` prefix, splits on commas. */` and `function etagMatches(header: string, etag: string): boolean { ... }`."
+      ],
       "promptTokens": 0,
       "completionTokens": 0
     },
@@ -14,10 +18,10 @@
       "riskLevel": "HIGH",
       "recommendation": "REQUEST_CHANGES",
       "findings": [
-        "The PR introduces new caching and HTTP response behavior for /api/reviews (Cache-Control, ETag, and in-memory caching) but there are no tests at all, so the new logic is unverified.",
-        "Test Suggestion 1: Add an integration test that calls /api/reviews twice with the same underlying data and asserts the first response includes Cache-Control and ETag headers, and the second response returns a 304 Not Modified when sent If-None-Match with the prior ETag.",
-        "Test Suggestion 2: Add a test for cache invalidation/refresh behavior by changing the underlying reviews data between requests and verifying the endpoint returns a new ETag and updated payload rather than serving stale cached content.",
-        "Test Suggestion 3: Add a failure-path test for the in-memory cache layer, such as cache miss/empty cache on first request and behavior when the cache is disabled or unavailable, to ensure the endpoint still returns a correct 200 response without breaking the API."
+        "The PR introduces new caching, conditional request handling, and response-header behavior for /api/reviews, but there are no tests covering the new logic, so the behavior is unverified.",
+        "Test Suggestion 1: Add an integration test that makes two GET requests with the same review files and asserts the first response returns 200 with both ETag and Cache-Control headers, then the second request with If-None-Match returns 304 and no body; this verifies the conditional caching path.",
+        "Test Suggestion 2: Add a cache refresh test that changes a review file's mtime/content between requests and verifies the endpoint generates a new ETag and returns updated JSON instead of stale cached data; this covers invalidation and data freshness.",
+        "Test Suggestion 3: Add an error-path test for malformed or unreadable review files to confirm the endpoint still skips bad files and returns a valid 200 response with no-store on unexpected failures; this protects the new file-stat/read flow and failure handling."
       ],
       "promptTokens": 0,
       "completionTokens": 0
@@ -27,19 +31,19 @@
       "riskLevel": "LOW",
       "recommendation": "APPROVE",
       "findings": [
-        "No security issues detected in the provided diff."
+        "No security issues detected in the provided diff. The changes add ETag/Cache-Control headers and in-memory caching for /api/reviews without introducing secrets exposure, authorization bypass, or unsafe input handling."
       ],
       "promptTokens": 0,
       "completionTokens": 0
     },
     {
       "agentName": "Complexity",
-      "riskLevel": "LOW",
-      "recommendation": "APPROVE",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
       "findings": [
-        "Cyclomatic Complexity: 0",
-        "Cognitive Complexity: 0",
-        "Primary driver: no diff provided to analyze"
+        "Cyclomatic Complexity: 14",
+        "Cognitive Complexity: 17",
+        "Primary driver: added cache/ETag branching with nested conditional paths and a per-file loop"
       ],
       "promptTokens": 0,
       "completionTokens": 0
@@ -49,20 +53,23 @@
       "riskLevel": "MEDIUM",
       "recommendation": "REQUEST_CHANGES",
       "findings": [
-        "P1: New caching and conditional response behavior for /api/reviews is unverified because there are no tests covering Cache-Control, ETag, 304 handling, or cache refresh/invalidation [TestQuality] - Add integration tests for repeated requests, If-None-Match/304 behavior, and updated data producing a new ETag and fresh payload.",
-        "P2: The in-memory cache failure/empty-cache path is not covered, so regressions could slip in if the cache is cold or unavailable [TestQuality] - Add a test that exercises cache miss/disabled-cache behavior and confirms the endpoint still returns a correct 200 response."
+        "P1: New caching and conditional GET behavior is untested, including 200/304 responses, ETag/Cache-Control headers, cache invalidation after file changes, and error-path handling for malformed/unreadable review files. Add integration tests covering these flows before merge. [TestQuality] - Add tests for initial fetch, If-None-Match 304, cache refresh on file change, and failure handling.",
+        "P2: The GET handler now mixes cache state mutation, file metadata reads, ETag generation, conditional request handling, file parsing, sorting, and pagination in one block, which increases cognitive load and makes request-order behavior harder to reason about. Extract cache/ETag decision logic and file-loading into helper functions or a cache manager. [CodeQuality] - Split the handler into smaller focused functions.",
+        "P2: The module-level in-memory cache introduces shared mutable state across requests, creating temporal coupling and making behavior depend on request order. Encapsulate cache access behind a dedicated object/function and document the invalidation rules. [CodeQuality] - Avoid direct mutation of module-level state in the route handler.",
+        "P2: The ETag matching helper is described as RFC 7232 compliant, but the implementation only covers a subset of valid `If-None-Match` forms. Tighten the comment/name to match supported behavior or replace it with a dedicated parser with explicit test coverage. [CodeQuality] - Clarify supported header formats and verify edge cases.",
+        "P2: The new cache/ETag branching and per-file loop raise cyclomatic and cognitive complexity, which will make future changes harder to maintain. Consider simplifying the control flow after extracting helpers. [Complexity] - Reduce nested conditionals and separate concerns."
       ],
-      "promptTokens": 816,
-      "completionTokens": 175
+      "promptTokens": 1332,
+      "completionTokens": 401
     }
   ],
   "metadata": {
-    "generatedAt": "2026-04-14T10:12:26.606Z",
-    "tookMs": 6733,
+    "generatedAt": "2026-04-14T10:15:28.611Z",
+    "tookMs": 11273,
     "model": "gpt-5.4-mini",
-    "totalPromptTokens": 816,
-    "totalCompletionTokens": 175,
-    "estimatedCost": 0.00022739999999999997
+    "totalPromptTokens": 1332,
+    "totalCompletionTokens": 401,
+    "estimatedCost": 0.00044039999999999997
   },
   "prNumber": 55,
   "prTitle": "Add Cache-Control, ETag, and in-memory caching to /api/reviews",
