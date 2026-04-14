@@ -1,19 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readdir, readFile } from "fs/promises"
+import { readdir, readFile, stat } from "fs/promises"
 import { join } from "path"
+import { createHash } from "crypto"
 import { transformReviewResponses } from "@/lib/api/review-transformer"
 import type { BackendReviewResponse, FrontendRecommendation, TestReport } from "@/lib/types/review"
 
 const REVIEWS_DIR = join(process.cwd(), "data", "reviews")
 
-interface ApiError {
-  error: string
-  code: string
-  message: string
+const CACHE_MAX_AGE = 60
+const CACHE_CONTROL = "private, max-age=60, stale-while-revalidate=300"
+
+interface CacheEntry {
+  etag: string
+  data: Array<{ response: BackendReviewResponse; filename: string }>
+  expiresAt: number
 }
 
-function errorResponse(error: string, code: string, message: string, status: number): NextResponse<ApiError> {
-  return NextResponse.json({ error, code, message }, { status })
+let cache: CacheEntry | null = null
+
+/** Creates a SHA-1 based ETag from an array of file descriptor strings. */
+function buildETag(files: string[]): string {
+  const hash = createHash("sha1").update(files.join(",")).digest("hex")
+  return `"${hash}"`
+}
+
+/** RFC 7232 compliant ETag matching: handles `*`, strips `W/` prefix, splits on commas. */
+function etagMatches(header: string, etag: string): boolean {
+  if (header.trim() === "*") return true
+  return header.split(",").some((candidate) => {
+    const trimmed = candidate.trim().replace(/^W\//, "")
+    return trimmed === etag
+  })
 }
 
 const VALID_SORT_FIELDS = ["date", "prNumber"] as const
@@ -147,7 +164,6 @@ function applyFilters(
 }
 
 export async function GET(request: NextRequest) {
-
   try {
     const result = parseQueryOptions(request.nextUrl.searchParams)
     if ("error" in result) return result.error
@@ -157,21 +173,9 @@ export async function GET(request: NextRequest) {
     let files: string[]
     try {
       files = await readdir(REVIEWS_DIR)
-    } catch (err) {
-      const nodeErr = err as NodeJS.ErrnoException
-      if (nodeErr.code === "ENOENT") {
-        // Directory doesn't exist - return empty list, not an error
-        return NextResponse.json({ data: [], total: 0, offset: 0 })
-      }
-      // Other filesystem errors (permissions, etc.)
-      console.error("Failed to read reviews directory:", err)
-      return errorResponse(
-        "Failed to read reviews directory",
-        "DIRECTORY_READ_ERROR",
-        "An unexpected error occurred while accessing the reviews directory.",
-        500,
-      )
-
+    } catch {
+      // Directory doesn't exist or is empty
+      return NextResponse.json({ data: [], total: 0, offset: 0 })
     }
 
     const jsonFiles = files.filter((f) => f.endsWith(".json"))
@@ -180,25 +184,55 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: [], total: 0, offset: 0 })
     }
 
-    // Read and parse each review file
-    const reviews: Array<{ response: BackendReviewResponse; filename: string }> = []
+    // Sort filenames for stable ETag computation
+    jsonFiles.sort()
 
+    // Build ETag from sorted filenames + mtimes
+    const fileDescriptors: string[] = []
     for (const filename of jsonFiles) {
-      try {
-        const filePath = join(REVIEWS_DIR, filename)
-        const content = await readFile(filePath, "utf-8")
-        const response = JSON.parse(content) as BackendReviewResponse
-        reviews.push({ response, filename })
-      } catch (err) {
-        const nodeErr = err as NodeJS.ErrnoException
-        if (nodeErr.code === "ENOENT") {
-          console.warn(`Review file not found (skipping): ${filename}`)
-        } else if (err instanceof SyntaxError) {
-          console.error(`Failed to parse review file ${filename} (skipping): invalid JSON`)
-        } else {
-          console.error(`Failed to read/parse ${filename} (skipping):`, err)
+      const filePath = join(REVIEWS_DIR, filename)
+      const fileStat = await stat(filePath)
+      fileDescriptors.push(`${filename}:${fileStat.mtimeMs}`)
+    }
+    const etag = buildETag(fileDescriptors)
+
+    // Fast path: If-None-Match + fresh cache → 304 Not Modified
+    const ifNoneMatch = request.headers.get("If-None-Match")
+    if (ifNoneMatch && etagMatches(ifNoneMatch, etag) && cache?.etag === etag && cache.expiresAt > Date.now()) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          "Cache-Control": CACHE_CONTROL,
+        },
+      })
+    }
+
+    // Stale path: cache etag matches but expired → refresh expiry, reuse data
+    let reviews: Array<{ response: BackendReviewResponse; filename: string }>
+    if (cache?.etag === etag) {
+      cache.expiresAt = Date.now() + CACHE_MAX_AGE * 1000
+      reviews = cache.data
+    } else {
+      // Read and parse each review file
+      reviews = []
+      for (const filename of jsonFiles) {
+        try {
+          const filePath = join(REVIEWS_DIR, filename)
+          const content = await readFile(filePath, "utf-8")
+          const response = JSON.parse(content) as BackendReviewResponse
+          reviews.push({ response, filename })
+        } catch (error) {
+          console.error(`Failed to read/parse ${filename}:`, error)
+          // Skip invalid files
         }
-        // Skip invalid files and continue processing others
+      }
+
+      // Populate cache
+      cache = {
+        etag,
+        data: reviews,
+        expiresAt: Date.now() + CACHE_MAX_AGE * 1000,
       }
     }
 
@@ -210,19 +244,25 @@ export async function GET(request: NextRequest) {
     const paginatedReports =
       limit !== undefined ? sorted.slice(offset, offset + limit) : sorted.slice(offset)
 
-    return NextResponse.json({
-      data: paginatedReports,
-      total,
-      offset,
-      ...(limit !== undefined ? { limit } : {}),
-    })
+    return NextResponse.json(
+      {
+        data: paginatedReports,
+        total,
+        offset,
+        ...(limit !== undefined ? { limit } : {}),
+      },
+      {
+        headers: {
+          ETag: etag,
+          "Cache-Control": CACHE_CONTROL,
+        },
+      }
+    )
   } catch (error) {
     console.error("Failed to fetch reviews:", error)
-    return errorResponse(
-      "Failed to fetch reviews",
-      "INTERNAL_SERVER_ERROR",
-      "An unexpected error occurred while fetching review data.",
-      500,
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     )
   }
 }

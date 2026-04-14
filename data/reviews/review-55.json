@@ -1,0 +1,70 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The PR introduces new caching and HTTP response behavior for /api/reviews (Cache-Control, ETag, and in-memory caching) but there are no tests at all, so the new logic is unverified.",
+        "Test Suggestion 1: Add an integration test that calls /api/reviews twice with the same underlying data and asserts the first response includes Cache-Control and ETag headers, and the second response returns a 304 Not Modified when sent If-None-Match with the prior ETag.",
+        "Test Suggestion 2: Add a test for cache invalidation/refresh behavior by changing the underlying reviews data between requests and verifying the endpoint returns a new ETag and updated payload rather than serving stale cached content.",
+        "Test Suggestion 3: Add a failure-path test for the in-memory cache layer, such as cache miss/empty cache on first request and behavior when the cache is disabled or unavailable, to ensure the endpoint still returns a correct 200 response without breaking the API."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected in the provided diff."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 0",
+        "Cognitive Complexity: 0",
+        "Primary driver: no diff provided to analyze"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: New caching and conditional response behavior for /api/reviews is unverified because there are no tests covering Cache-Control, ETag, 304 handling, or cache refresh/invalidation [TestQuality] - Add integration tests for repeated requests, If-None-Match/304 behavior, and updated data producing a new ETag and fresh payload.",
+        "P2: The in-memory cache failure/empty-cache path is not covered, so regressions could slip in if the cache is cold or unavailable [TestQuality] - Add a test that exercises cache miss/disabled-cache behavior and confirms the endpoint still returns a correct 200 response."
+      ],
+      "promptTokens": 816,
+      "completionTokens": 175
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-14T10:12:26.606Z",
+    "tookMs": 6733,
+    "model": "gpt-5.4-mini",
+    "totalPromptTokens": 816,
+    "totalCompletionTokens": 175,
+    "estimatedCost": 0.00022739999999999997
+  },
+  "prNumber": 55,
+  "prTitle": "Add Cache-Control, ETag, and in-memory caching to /api/reviews",
+  "author": "Copilot"
+}
