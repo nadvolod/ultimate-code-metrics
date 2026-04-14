@@ -17,7 +17,10 @@ import java.util.List;
 public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private static final Logger logger = Workflow.getLogger(PRReviewWorkflowImpl.class);
 
-    // 1. configure how activities should behave (values driven by environment variables)
+    // 1. configure how activities should behave.
+    //    AppConfig getters return values cached at startup (via validate()),
+    //    so this static initializer is replay-safe — it will never read
+    //    live environment variables during workflow execution.
     private static final ActivityOptions ACTIVITY_OPTIONS = ActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofSeconds(AppConfig.getActivityTimeoutSeconds()))
             .setRetryOptions(RetryOptions.newBuilder()
