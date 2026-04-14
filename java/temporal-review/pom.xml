@@ -17,8 +17,25 @@
     <description>Temporal-based PR review orchestration module</description>
 
     <properties>
-        <temporal.version>1.24.1</temporal.version>
+        <temporal.version>1.30.1</temporal.version>
+        <!-- Override grpc-netty-shaded to address GHSA-prj3-ccx8-p6x4 (HTTP/2 MadeYouReset DoS).
+             1.73.0 is the latest available; full remediation requires >=1.75.0 (not yet released).
+             Validate runtime compatibility with Temporal before upgrading further. -->
+        <grpc.version>1.73.0</grpc.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Force grpc-netty-shaded to override the version bundled by temporal-sdk.
+                 Addresses GHSA-prj3-ccx8-p6x4 (partial: requires >=1.75.0 for full fix),
+                 GHSA-9hxf-ppjv-w6rq, and GHSA-cfgp-2977-2fmm. -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Temporal SDK -->
