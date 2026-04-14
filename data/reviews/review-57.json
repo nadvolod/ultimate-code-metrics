@@ -1,0 +1,64 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "java/temporal-review/src/main/java/com/utm/temporal/llm/OpenAiLlmClient.java @@ -48,30 +57,67 @@: retry logic is mixed into the core request flow, creating mixed abstraction levels and making the method harder to reason about. The loop, backoff, request execution, and error classification are all in one method. Smallest refactoring: Extract Function for retry/backoff handling and Separate Query from Modifier for the request execution path. Evidence: \"for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) { ... Thread.sleep(backoffMs); ... httpClient.newCall(request).execute() ... }\"",
+        "java/temporal-review/src/main/java/com/utm/temporal/llm/OpenAiLlmClient.java @@ -48,30 +57,67 @@: the method now uses exception-type branching as control flow for retryability, which is a type-switching smell and makes error handling brittle. The distinction between retryable and non-retryable failures is encoded via RuntimeException/IOException rather than a dedicated error classification. Smallest refactoring: Introduce Parameter Object or domain-specific exception hierarchy to represent retryable vs non-retryable API failures. Evidence: \"if (statusCode >= 400 && statusCode < 500 && statusCode != 429) { throw new RuntimeException(... [error_code=CLIENT_ERROR]); }\" and \"catch (RuntimeException e) { // Non-retryable errors bubble up immediately } catch (IOException e) { // Network/IO errors are retryable }\"",
+        "app/api/reviews/route.ts @@ -6,15 +6,36 @@: the new helper name is generic and the response shape is duplicated as a local interface, which can become a leaky boundary if more API routes adopt the same pattern. Not enough context in diff to assess whether this should be shared, but the current naming is vague for a function that always returns an error response. Smallest refactoring: Extract Function with a more specific verb-based name, or Introduce Parameter Object/shared error response type if reused. Evidence: \"interface ApiError { ... }\" and \"function errorResponse(error: string, code: string, message: string, status: number): NextResponse<ApiError> { ... }\""
+      ]
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new error-handling branches and retry logic in both the API route and the Java OpenAI client, but there are no tests covering the new behavior. This is especially risky because the changes affect failure handling and response contracts.",
+        "Test Suggestion 1: Add route tests for app/api/reviews/route.ts that simulate readdir throwing ENOENT versus a non-ENOENT filesystem error, and assert the former returns an empty array while the latter returns the structured ApiError payload with status 500. This verifies the new directory error branching and response shape.",
+        "Test Suggestion 2: Add route tests for malformed and missing review files to confirm invalid JSON is skipped, ENOENT during file read is logged/skipped, and valid files still appear in the aggregated response. This protects the data-flow behavior introduced by the new per-file error handling.",
+        "Test Suggestion 3: Add OpenAiLlmClient tests for retry behavior: one case where the first two attempts fail with 5xx/429 and the third succeeds, and one case where a 4xx non-429 response fails immediately without retry. This validates the new backoff/retry policy and ensures non-retryable errors do not get masked."
+      ]
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected. The new API error responses in `app/api/reviews/route.ts` return generic messages and do not expose secrets or sensitive internal data; filesystem errors are logged server-side only.",
+        "No security issues detected. The changes in `OpenAiLlmClient.java` add retry logic and structured logging, but do not introduce authentication/authorization bypasses or unsafe input handling; the OpenAI request still uses a fixed base URL and the API key is only sent in the Authorization header, not logged or returned."
+      ]
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Cyclomatic Complexity: 14",
+        "Cognitive Complexity: 16",
+        "Primary driver: added retry loops with nested try/catch and multiple error-branch conditions"
+      ]
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: New error-handling branches and retry logic in both `app/api/reviews/route.ts` and `OpenAiLlmClient.java` are untested; add route tests for ENOENT vs non-ENOENT filesystem failures, malformed/missing review files, and client tests for retry success/fail-fast behavior [TestQuality] - Cover the new failure contracts before merge.",
+        "P2: `OpenAiLlmClient.java` mixes retry/backoff, request execution, and error classification in one method, which raises cyclomatic/cognitive complexity and makes the flow harder to maintain [CodeQuality][Complexity] - Extract retry/backoff handling and separate error classification into dedicated helpers or types.",
+        "P2: `OpenAiLlmClient.java` uses exception-type branching as control flow for retryability, making the retry policy brittle and harder to extend [CodeQuality] - Introduce a domain-specific error classification or exception hierarchy for retryable vs non-retryable failures.",
+        "P3: `app/api/reviews/route.ts` defines a local `ApiError` interface and a generic `errorResponse` helper that may become a leaky duplicated pattern if reused elsewhere [CodeQuality] - Rename the helper to a more specific verb-based name or extract a shared error-response type if this pattern is reused."
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-14T00:44:06.831Z",
+    "tookMs": 12025,
+    "model": "gpt-5.4-mini"
+  },
+  "prNumber": 57,
+  "prTitle": "[WIP] Add API error handling and structured error responses",
+  "author": "Copilot"
+}
