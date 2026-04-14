@@ -9,7 +9,7 @@ const REVIEWS_DIR = join(process.cwd(), "data", "reviews")
 
 // Cache max-age in seconds (60 seconds for review data)
 const CACHE_MAX_AGE = 60
-const CACHE_CONTROL = `public, max-age=${CACHE_MAX_AGE}, stale-while-revalidate=30`
+const CACHE_CONTROL = `private, max-age=${CACHE_MAX_AGE}, stale-while-revalidate=30`
 
 interface CacheEntry {
   etag: string
@@ -108,6 +108,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Failed to fetch reviews:", error)
-    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    )
   }
 }
