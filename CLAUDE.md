@@ -55,7 +55,7 @@ WorkerApp (CLI entry point)
 - **Agents** contain business logic and make LLM calls
 
 ### Technology Stack
-- **Backend**: Java 11+, Maven, Temporal SDK 1.30.1, OkHttp, Jackson
+- **Backend**: Java 11+, Maven, Temporal SDK 1.34.0, OkHttp, Jackson
 - **Frontend**: Next.js 16, React 19, TypeScript 5 (strict), Tailwind CSS 4, Radix UI, Recharts
 - **LLM**: OpenAI API (gpt-4o-mini default)
 

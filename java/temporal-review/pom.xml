@@ -17,28 +17,18 @@
     <description>Temporal-based PR review orchestration module</description>
 
     <properties>
-        <temporal.version>1.30.1</temporal.version>
-        <!--
-          RESIDUAL RISK — GHSA-prj3-ccx8-p6x4 (CVE-2025-55163, HTTP/2 MadeYouReset DDoS):
-          temporal-sdk 1.30.1 bundles grpc-netty-shaded 1.73.0, which is still vulnerable.
-          Full remediation requires grpc-netty-shaded >= 1.75.0, which is not yet published on
-          Maven Central (latest as of 2026-04-14: 1.73.0). This pin is a placeholder — update
-          grpc.version to 1.75.0 (or later) once it is available, then validate runtime
-          compatibility with Temporal before releasing.
-          Interim mitigation: apply WAF rules, rate-limiting, or HTTP/2 connection limits at
-          the network layer to reduce exposure until the library upgrade can be completed.
-        -->
-        <grpc.version>1.73.0</grpc.version>
+        <temporal.version>1.34.0</temporal.version>
+        <!-- Explicit pin for grpc-netty-shaded >= 1.75.0, which fully remediates
+             GHSA-prj3-ccx8-p6x4 / CVE-2025-55163 (HTTP/2 MadeYouReset DDoS).
+             temporal-sdk 1.34.0 imports grpc-bom 1.75.0 and therefore already
+             resolves grpc-netty-shaded to 1.75.0 transitively; this pin makes
+             the security-relevant floor version explicit and guards against any
+             future transitive downgrade. -->
+        <grpc.version>1.75.0</grpc.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!--
-              Pin grpc-netty-shaded so the version is explicit and easily upgraded.
-              Update grpc.version above to >= 1.75.0 once that release is available to
-              fully remediate GHSA-prj3-ccx8-p6x4. The 1.73.0 pin matches what
-              temporal-sdk 1.30.1 already brings transitively; it does NOT fix MadeYouReset.
-            -->
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty-shaded</artifactId>
