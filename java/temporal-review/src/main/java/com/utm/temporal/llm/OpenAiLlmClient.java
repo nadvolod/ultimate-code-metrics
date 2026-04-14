@@ -3,6 +3,8 @@ package com.utm.temporal.llm;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,14 +17,24 @@ import java.util.concurrent.TimeUnit;
  */
 public class OpenAiLlmClient implements LlmClient {
 
-    public static final String DEFAULT_MODEL = "gpt-5.4-mini";
+    private static final Logger logger = LoggerFactory.getLogger(OpenAiLlmClient.class);
+
+    public static final String DEFAULT_MODEL = "gpt-4o-mini";
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
+    // In-client retry handles transient OpenAI API errors (429, 5xx) before they bubble up
+    // to Temporal's activity-level retry, which would re-execute the entire activity.
+    private static final int MAX_RETRIES = 3;
+    private static final int TOTAL_ATTEMPTS = MAX_RETRIES + 1;
+    private static final long INITIAL_BACKOFF_MS = 1000L;
+    private static final long MAX_BACKOFF_MS = 30000L;
 
     /** Default maximum number of characters allowed in a user message (diff) before truncation. */
     public static final int DEFAULT_MAX_DIFF_CHARS = 100_000;
     private static final String TRUNCATION_NOTICE =
             "\n\n[TRUNCATED: Diff exceeded the configured size limit. Analysis is based on the first %d characters only.]";
+
 
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -82,33 +94,76 @@ public class OpenAiLlmClient implements LlmClient {
             return getDummyResponse(messages);
         }
 
-        try {
-            // Truncate user message content that exceeds the configured diff size limit
-            List<Message> effectiveMessages = applyDiffSizeLimit(messages);
+        // Truncate user message content that exceeds the configured diff size limit
+        List<Message> effectiveMessages = applyDiffSizeLimit(messages);
 
-            // Build request JSON
-            String requestBody = buildRequestBody(effectiveMessages, options);
+        IOException lastException = null;
 
-            // Make HTTP call to OpenAI
-            Request request = new Request.Builder()
-                    .url(baseUrl)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .post(RequestBody.create(requestBody, JSON))
-                    .build();
 
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("OpenAI API call failed: HTTP " + response.code() + " - " + response.message());
+        for (int attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
+            if (attempt > 0) {
+                long backoffMs = Math.min(INITIAL_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS); // Exponential backoff: INITIAL_BACKOFF_MS * 2^(attempt-1), capped at MAX_BACKOFF_MS
+                logger.warn("OpenAI API call failed (attempt {}), retrying in {}ms...", attempt + 1, backoffMs);
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting to retry OpenAI API call", ie);
                 }
-
-                String responseBody = response.body().string();
-                return parseResponse(responseBody);
             }
-        } catch (Exception e) {
-            // No retry logic - fail fast!
-            throw new RuntimeException("OpenAI API call failed: " + e.getMessage(), e);
+
+            try {
+                String requestBody = buildRequestBody(effectiveMessages, options);
+
+                Request request = new Request.Builder()
+                        .url(baseUrl)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Content-Type", "application/json")
+                        .post(RequestBody.create(requestBody, JSON))
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    int statusCode = response.code();
+
+                    if (response.isSuccessful()) {
+                        if (response.body() == null) {
+                            throw new RuntimeException(
+                                    "OpenAI API returned a successful response (HTTP " + statusCode +
+                                    ") but the response body was null");
+                        }
+                        String responseBody = response.body().string();
+                        return parseResponse(responseBody);
+                    }
+
+                    // 4xx errors (except 429 rate limit) are not retryable
+                    if (statusCode >= 400 && statusCode < 500 && statusCode != 429) {
+                        throw new RuntimeException(
+                                "OpenAI API call failed with non-retryable error: HTTP " + statusCode +
+                                " - " + response.message() + " [error_code=CLIENT_ERROR]");
+                    }
+
+                    // 429 (rate limit) and 5xx errors are retryable
+                    lastException = new IOException(
+                            "OpenAI API call failed: HTTP " + statusCode + " - " + response.message() +
+                            " [error_code=" + (statusCode == 429 ? "RATE_LIMIT" : "SERVER_ERROR") + "]");
+                }
+            } catch (RuntimeException e) {
+                // Non-retryable errors bubble up immediately
+                throw e;
+            } catch (IOException e) {
+                // Network/IO errors are retryable
+                lastException = e;
+                logger.warn("OpenAI API network error on attempt {}: {}", attempt + 1, e.getMessage());
+            }
         }
+
+        // All retries exhausted
+        logger.error("OpenAI API call failed after {} attempts. Last error: {}", TOTAL_ATTEMPTS,
+                lastException != null ? lastException.getMessage() : "unknown");
+        throw new RuntimeException(
+                "OpenAI API call failed after " + TOTAL_ATTEMPTS + " attempts [error_code=SERVICE_UNAVAILABLE]: " +
+                (lastException != null ? lastException.getMessage() : "unknown error"),
+                lastException);
     }
 
     /**
