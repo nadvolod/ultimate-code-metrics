@@ -155,9 +155,9 @@ public class AppConfig {
 
         // Cache all resolved values — these are now immutable for the
         // lifetime of the JVM, keeping Temporal replays deterministic.
-        temporalAddress = System.getenv().getOrDefault("TEMPORAL_ADDRESS", DEFAULT_TEMPORAL_ADDRESS);
-        taskQueue = System.getenv().getOrDefault("TASK_QUEUE", DEFAULT_TASK_QUEUE);
-        openAiModel = System.getenv().getOrDefault("OPENAI_MODEL", DEFAULT_OPENAI_MODEL);
+        temporalAddress = getTrimmedEnvOrDefault("TEMPORAL_ADDRESS", DEFAULT_TEMPORAL_ADDRESS);
+        taskQueue = getTrimmedEnvOrDefault("TASK_QUEUE", DEFAULT_TASK_QUEUE);
+        openAiModel = getTrimmedEnvOrDefault("OPENAI_MODEL", DEFAULT_OPENAI_MODEL);
         dummyMode = resolvedDummyMode;
         activityTimeoutSeconds = resolvedTimeout;
         retryIntervalSeconds = resolvedRetry;
@@ -182,6 +182,18 @@ public class AppConfig {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Returns the trimmed value of the given environment variable, or
+     * {@code defaultValue} when the variable is unset or blank.
+     */
+    private static String getTrimmedEnvOrDefault(String envName, String defaultValue) {
+        String value = System.getenv(envName);
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        return value.trim();
+    }
 
     private static int parseIntEnv(String name, int defaultValue) {
         String raw = System.getenv(name);
