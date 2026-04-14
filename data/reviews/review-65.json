@@ -1,0 +1,69 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff updates the Temporal SDK version to remediate high-severity CVEs, which may introduce changes in behavior or dependencies that require testing.",
+        "Test Suggestion 1: Create a test case that verifies the integration of the updated Temporal SDK with existing workflows to ensure that no breaking changes affect the orchestration logic.",
+        "Test Suggestion 2: Implement a test to check for proper handling of any new exceptions or error messages that may arise from the updated SDK, ensuring robust error handling.",
+        "Test Suggestion 3: Test the behavior of the application under load to ensure that the new version of the SDK does not introduce performance regressions or memory leaks."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 1",
+        "Cognitive Complexity: 1",
+        "Primary driver: simple version updates with no branching logic"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "HIGH",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: The diff updates the Temporal SDK version, which may introduce changes in behavior or dependencies that require testing. [TestQuality] - Create tests to verify integration and error handling with the updated SDK."
+      ],
+      "promptTokens": 746,
+      "completionTokens": 79
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-14T10:24:54.114Z",
+    "tookMs": 11385,
+    "model": "gpt-4o-mini",
+    "totalPromptTokens": 746,
+    "totalCompletionTokens": 79,
+    "estimatedCost": 0.0001593
+  },
+  "prNumber": 65,
+  "prTitle": "fix: remediate all HIGH-severity transitive CVEs from temporal-sdk",
+  "author": "Copilot"
+}
