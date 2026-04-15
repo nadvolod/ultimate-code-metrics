@@ -40,21 +40,21 @@ class PRReviewWorkflowImplTest {
     }
 
     @Test
-    void estimateCost_gpt41Mini_usesCorrectPricing() {
+    void estimateCost_gpt4Dot1Mini_usesCorrectPricing() {
         // gpt-4.1-mini: input $0.40, output $1.60 per 1M tokens
         double cost = PRReviewWorkflowImpl.estimateCost("gpt-4.1-mini", 1_000_000, 1_000_000);
         assertEquals(2.00, cost, 1e-9);
     }
 
     @Test
-    void estimateCost_gpt41_usesCorrectPricing() {
+    void estimateCost_gpt4Dot1_usesCorrectPricing() {
         // gpt-4.1: input $2.00, output $8.00 per 1M tokens
         double cost = PRReviewWorkflowImpl.estimateCost("gpt-4.1", 1_000_000, 1_000_000);
         assertEquals(10.00, cost, 1e-9);
     }
 
     @Test
-    void estimateCost_gpt54Mini_usesCorrectPricing() {
+    void estimateCost_gpt5Dot4Mini_usesCorrectPricing() {
         // gpt-5.4-mini: input $0.40, output $1.60 per 1M tokens
         double cost = PRReviewWorkflowImpl.estimateCost("gpt-5.4-mini", 1_000_000, 1_000_000);
         assertEquals(2.00, cost, 1e-9);
@@ -65,7 +65,7 @@ class PRReviewWorkflowImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void estimateCost_gpt41Mini_doesNotMatchGpt41Pricing() {
+    void estimateCost_gpt4Dot1Mini_doesNotMatchGpt4Dot1Pricing() {
         double miniCost = PRReviewWorkflowImpl.estimateCost("gpt-4.1-mini", 1_000_000, 1_000_000);
         double fullCost = PRReviewWorkflowImpl.estimateCost("gpt-4.1", 1_000_000, 1_000_000);
         assertNotEquals(fullCost, miniCost, "gpt-4.1-mini should not use gpt-4.1 pricing");
