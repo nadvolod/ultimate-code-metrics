@@ -43,6 +43,13 @@ class PromptLoaderTest {
     }
 
     @Test
+    void loadPrompt_impactAnalysis_returnsContent() {
+        String prompt = PromptLoader.loadPrompt("impact-analysis");
+        assertNotNull(prompt);
+        assertTrue(prompt.contains("Impact Analysis"));
+    }
+
+    @Test
     void loadPrompt_missingFile_throwsRuntimeException() {
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
             PromptLoader.loadPrompt("nonexistent-agent")
@@ -53,7 +60,7 @@ class PromptLoaderTest {
 
     @Test
     void loadPrompt_allPromptsContainJsonResponseFormat() {
-        String[] agents = {"code-quality", "security", "test-quality", "complexity", "priority"};
+        String[] agents = {"code-quality", "security", "test-quality", "complexity", "priority", "impact-analysis"};
         for (String agent : agents) {
             String prompt = PromptLoader.loadPrompt(agent);
             assertTrue(prompt.contains("agentName"), agent + " prompt missing agentName in JSON format");

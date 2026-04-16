@@ -1,0 +1,95 @@
+{
+  "overallRecommendation": "REQUEST_CHANGES",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Potential mixed abstraction / leaky boundary in `java/temporal-review/src/main/java/com/utm/temporal/agent/ImpactAnalysisAgent.java` @@ -27,6 +27,48 @@: `\"Impact Analysis Agent - identifies the blast radius of code changes for QA teams.\"` and `\"public AgentResult analyze(String prTitle, String prDescription, String diff, String learningContext)\"` combine prompt construction, LLM invocation, JSON parsing, and token bookkeeping in one method. Smallest refactoring: Extract Function / Separate Query from Modifier by moving prompt building and response parsing into dedicated helpers.",
+        "Potential exception misuse / unsafe fallback in `java/temporal-review/src/main/java/com/utm/temporal/agent/ImpactAnalysisAgent.java` @@ -27,6 +27,48 @@: `catch (Exception e) { throw new RuntimeException(\"Impact Analysis Agent failed: \" + e.getMessage(), e); }` swallows the original boundary-specific failure type and collapses all errors into a generic runtime exception. Smallest refactoring: Catch specific exceptions and rethrow a domain-specific exception or let checked boundary failures propagate with context.",
+        "Potential hidden coupling / temporal coupling in `java/temporal-review/src/main/java/com/utm/temporal/workflow/PRReviewWorkflowImpl.java` @@ -85,35 +88,42 @@: `// 5. Call Impact Analysis Agent` followed by `// 6. Call Priority Agent with results from other agents` and `priorityActivity.prioritizeIssues(request, results);` means the new agent is now part of the ordering contract for downstream prioritization. Not enough context in diff to assess whether `PriorityAgent` expects this new result shape; if it does, the dependency should be made explicit. Smallest refactoring: Introduce Parameter Object or make the aggregation contract explicit in the priority API.",
+        "Potential naming inconsistency / noise in `java/temporal-review/src/main/java/com/utm/temporal/activity/ImpactAnalysisActivityImpl.java` @@ -1,0 +1,19 @@: `analyze(ReviewRequest pullRequest)` passes `pullRequest.prTitle`, `pullRequest.prDescription`, `pullRequest.diff` directly. The parameter name `pullRequest` is fine, but the method name `analyze` is generic while the activity is specifically impact analysis. Not enough context in diff to assess whether this matches the naming convention used by other activities. Smallest refactoring: keep verb-based naming but consider a more specific method name if the interface is public and ambiguous."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new runtime logic for a fifth agent (Impact Analysis), wires it into the workflow, and adds a new prompt/resource, but coverage is only a minimal prompt-loader assertion; there are no tests for the new agent implementation or workflow integration.",
+        "Test Suggestion 1: Add a unit test for ImpactAnalysisAgent.analyze() that mocks LlmClient and verifies it builds the expected system/user messages, uses the configured model/options, and correctly maps a valid JSON response into AgentResult, including token counts.",
+        "Test Suggestion 2: Add failure-path tests for ImpactAnalysisAgent.analyze() covering malformed JSON from the LLM and LlmClient exceptions, asserting the method throws the wrapped RuntimeException with the expected message so error handling is stable.",
+        "Test Suggestion 3: Add a workflow/activity integration test for PRReviewWorkflowImpl or WorkerApp registration to confirm ImpactAnalysisActivity is invoked in the correct sequence, its result is included in the results passed to PriorityActivity, and the workflow still behaves correctly when the new agent returns a high-risk finding."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "No security issues detected. The diff adds a new Impact Analysis agent, prompt resources, and workflow wiring without introducing secrets handling, authorization changes, or unsafe input sinks."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "LOW",
+      "recommendation": "APPROVE",
+      "findings": [
+        "Cyclomatic Complexity: 4",
+        "Cognitive Complexity: 4",
+        "Primary driver: straightforward agent wiring and a single try/catch path in the new ImpactAnalysisAgent"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Impact Analysis",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "[Direct] Added new ImpactAnalysisAgent, ImpactAnalysisActivity, and ImpactAnalysisActivityImpl, and wired them into WorkerApp and PRReviewWorkflowImpl so the workflow now executes 6 agents instead of 5.",
+        "[Direct] Added new prompt resource at src/main/resources/prompts/impact-analysis.md and updated priority prompt text to recognize ImpactAnalysis as a source agent.",
+        "[Indirect] PRReviewWorkflowImpl now passes the new agent result into PriorityAgent; any priority consolidation logic that assumes only 5 agent results may need validation, but the diff does not show PriorityAgent implementation.",
+        "[Indirect] WorkerApp registration changed, so Temporal worker startup and activity binding for the new AnalyzeImpact activity should be verified end-to-end; no startup or registration tests are shown in the diff.",
+        "[Test Gap] Only PromptLoaderTest was updated; there are no visible tests covering ImpactAnalysisAgent JSON parsing, LLM invocation options, or ImpactAnalysisActivityImpl wiring.",
+        "[Test Gap] No visible workflow test asserts the new 6-step execution order, inclusion of Impact Analysis in aggregated results, or that heuristics are applied to the new agent output.",
+        "[QA Focus] Regression-test PR review runs to confirm the new Impact Analysis step appears in output, does not break existing Code/Test/Security/Complexity/Priority results, and that the final priority summary still consolidates all agent findings correctly.",
+        "[QA Focus] Verify prompt loading for 'impact-analysis' and that the agent returns valid AgentResult JSON with findings prefixed as [Direct], [Indirect], [Test Gap], and [QA Focus]."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "P1: New ImpactAnalysisAgent and workflow wiring lack unit and integration coverage; add tests for prompt construction, LLM JSON parsing, token accounting, failure paths, and 6-step workflow/worker registration to prevent regressions [TestQuality] - Add focused tests before merge",
+        "P2: ImpactAnalysisAgent currently mixes prompt building, LLM invocation, JSON parsing, and token bookkeeping in one method; extract helpers to improve readability and maintainability [CodeQuality] - Refactor into smaller methods",
+        "P2: Error handling in ImpactAnalysisAgent collapses all failures into a generic RuntimeException; catch specific exceptions or use a domain-specific exception so callers can distinguish parse, transport, and model failures [CodeQuality] - Preserve failure context with typed exceptions",
+        "P2: PRReviewWorkflowImpl now depends on the new agent result being passed into PriorityActivity; make the aggregation contract explicit and verify PriorityAgent handles the expanded result set [CodeQuality][ImpactAnalysis] - Update the priority API or add contract tests",
+        "P3: ImpactAnalysisActivityImpl method naming is generic relative to the new activity purpose; consider a more specific name if it improves API clarity [CodeQuality] - Align naming with existing activity conventions"
+      ],
+      "promptTokens": 1742,
+      "completionTokens": 271
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-16T15:04:23.992Z",
+    "tookMs": 20038,
+    "model": "gpt-5.4-mini",
+    "totalPromptTokens": 1742,
+    "totalCompletionTokens": 271,
+    "estimatedCost": 0.002526
+  },
+  "prNumber": 72,
+  "prTitle": "Add Impact Analysis Agent for QA teams",
+  "author": "nadvolod"
+}

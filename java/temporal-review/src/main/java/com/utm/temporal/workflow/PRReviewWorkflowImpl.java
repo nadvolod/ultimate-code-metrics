@@ -43,6 +43,9 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
     private final SecurityQualityActivity securityQualityActivity = Workflow.newActivityStub(
             SecurityQualityActivity.class, ACTIVITY_OPTIONS
     );
+    private final ImpactAnalysisActivity impactAnalysisActivity = Workflow.newActivityStub(
+            ImpactAnalysisActivity.class, ACTIVITY_OPTIONS
+    );
     private final PriorityActivity priorityActivity = Workflow.newActivityStub(
             PriorityActivity.class, ACTIVITY_OPTIONS
     );
@@ -85,35 +88,42 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
             List<AgentResult> results = new ArrayList<>();
 
             // 1. Call Code Quality Agent
-            logger.info("[1/5] Calling Code Quality Agent...");
+            logger.info("[1/6] Calling Code Quality Agent...");
             AgentResult codeQuality = codeQualityActivity.analyze(request);
             codeQuality = heuristicsEngine.apply(codeQuality, request.diff);
             results.add(codeQuality);
             logger.info("      → " + codeQuality.recommendation + " (Risk: " + codeQuality.riskLevel + ")");
 
             // 2. Call Test Quality Agent
-            logger.info("[2/5] Calling Test Quality Agent...");
+            logger.info("[2/6] Calling Test Quality Agent...");
             AgentResult testQuality = testQualityActivity.analyze(request);
             testQuality = heuristicsEngine.apply(testQuality, request.diff);
             results.add(testQuality);
             logger.info("      → " + testQuality.recommendation + " (Risk: " + testQuality.riskLevel + ")");
 
             // 3. Call Security Agent
-            logger.info("[3/5] Calling Security Agent...");
+            logger.info("[3/6] Calling Security Agent...");
             AgentResult security = securityQualityActivity.analyze(request);
             security = heuristicsEngine.apply(security, request.diff);
             results.add(security);
             logger.info("      → " + security.recommendation + " (Risk: " + security.riskLevel + ")");
 
             // 4. Call Complexity Agent
-            logger.info("[4/5] Calling Complexity Agent...");
+            logger.info("[4/6] Calling Complexity Agent...");
             AgentResult complexity = complexityQualityActivity.analyze(request);
             complexity = heuristicsEngine.apply(complexity, request.diff);
             results.add(complexity);
             logger.info("      → " + complexity.recommendation + " (Risk: " + complexity.riskLevel + ")");
 
-            // 5. Call Priority Agent with results from other agents
-            logger.info("[5/5] Calling Priority Agent...");
+            // 5. Call Impact Analysis Agent
+            logger.info("[5/6] Calling Impact Analysis Agent...");
+            AgentResult impactAnalysis = impactAnalysisActivity.analyze(request);
+            impactAnalysis = heuristicsEngine.apply(impactAnalysis, request.diff);
+            results.add(impactAnalysis);
+            logger.info("      → " + impactAnalysis.recommendation + " (Risk: " + impactAnalysis.riskLevel + ")");
+
+            // 6. Call Priority Agent with results from other agents
+            logger.info("[6/6] Calling Priority Agent...");
             AgentResult priority = priorityActivity.prioritizeIssues(request, results);
             results.add(priority);
             logger.info("      → " + priority.recommendation + " (Risk: " + priority.riskLevel + ")");

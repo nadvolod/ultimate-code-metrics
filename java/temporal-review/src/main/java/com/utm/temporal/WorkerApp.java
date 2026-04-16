@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.temporal.activity.*;
 import com.utm.temporal.agent.ComplexityAgent;
 import com.utm.temporal.agent.CodeQualityAgent;
+import com.utm.temporal.agent.ImpactAnalysisAgent;
 import com.utm.temporal.agent.PriorityAgent;
 import com.utm.temporal.agent.SecurityAgent;
 import com.utm.temporal.agent.TestQualityAgent;
@@ -101,6 +102,7 @@ public class WorkerApp {
             SecurityAgent securityAgent = new SecurityAgent();
             PriorityAgent priorityAgent = new PriorityAgent();
             ComplexityAgent complexityAgent = new ComplexityAgent();
+            ImpactAnalysisAgent impactAnalysisAgent = new ImpactAnalysisAgent();
 
             // Register activity implementations
             worker.registerActivitiesImplementations(
@@ -109,6 +111,7 @@ public class WorkerApp {
                     new SecurityQualityActivityImpl(securityAgent),
                     new PriorityActivityImpl(priorityAgent),
                     new ComplexityQualityActivityImpl(complexityAgent),
+                    new ImpactAnalysisActivityImpl(impactAnalysisAgent),
                     new OutcomeRecordingActivityImpl(dbClient),
                     new LoadInsightsActivityImpl(dbClient));
 
