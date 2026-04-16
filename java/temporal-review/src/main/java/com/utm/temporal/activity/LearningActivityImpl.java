@@ -103,6 +103,7 @@ public class LearningActivityImpl implements LearningActivity {
                                       List<SeverityCalibration> activeCalibrations) {
         try {
             Instant now = Instant.now();
+            // Next occurrence of 3 AM UTC — mirrors the "0 3 * * *" cron in LearningWorkerApp
             Instant nextDailyRun = now.truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS)
                     .plus(3, ChronoUnit.HOURS);
 
@@ -119,6 +120,9 @@ public class LearningActivityImpl implements LearningActivity {
                     "Collect PR outcomes from GitHub every hour", now.toString(), "OK"));
             schedules.put("learningAnalysis", scheduleEntry("0 3 * * *",
                     "Analyze outcomes and propose learning improvements daily", now.toString(), "OK"));
+            // Evaluation runs on a separate weekly schedule (EvaluationWorkflow / EvaluationActivityImpl).
+            // Its lastRunAt is not known here, so it is left null and shown as PENDING until the
+            // EvaluationActivity updates the status file independently.
             schedules.put("evaluation", scheduleEntry("0 6 * * MON",
                     "Compute weekly evaluation metrics snapshot", null, "PENDING"));
             status.put("schedules", schedules);
@@ -185,7 +189,9 @@ public class LearningActivityImpl implements LearningActivity {
             }
             status.put("activeCalibrations", calibList);
 
-            // Write atomically via a temp file to avoid partial reads by the UI
+            // Write atomically via a temp file: objectMapper writes to a .tmp file first, then
+            // ATOMIC_MOVE swaps it into place.  This ensures the Next.js API never reads a
+            // partially-written file even if a concurrent request is in progress.
             Path outputDir = Paths.get("data", "learning");
             Files.createDirectories(outputDir);
             Path tmp = Files.createTempFile(outputDir, "status-", ".tmp");
