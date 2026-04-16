@@ -1,0 +1,80 @@
+{
+  "overallRecommendation": "BLOCK",
+  "agents": [
+    {
+      "agentName": "Code Quality",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "app/api/learning/route.ts @@ -0,0 +1,98 @@ \"catch { // No status file yet — return empty/mock state so the UI still renders return NextResponse.json(MOCK_STATUS) }\" — exception misuse / unsafe fallback at an I/O boundary. This swallows all read/parse errors and returns mock data even when the file exists but is corrupt or unreadable, hiding failures from the UI. Smallest refactoring: catch only the expected missing-file case and return a distinct error response for parse/other I/O failures.",
+        "java/temporal-review/src/main/java/com/utm/temporal/activity/LearningActivityImpl.java @@ -28,6 +43,11 @@ \"if (totalReviews < 5) { writeLearningStatus(...); return currentVersion; }\" — hidden side effect / mixed responsibilities. The learning activity now both performs learning analysis and writes dashboard state, which couples workflow logic to file-system persistence. Smallest refactoring: Extract Function for status snapshot writing and Wrap File I/O behind a dedicated persistence adapter so the activity stays focused on learning decisions.",
+        "java/temporal-review/src/main/java/com/utm/temporal/activity/LearningActivityImpl.java @@ -54,10 +74,150 @@ \"// Write atomically via a temp file ... Files.move(tmp, outputDir.resolve(\\\"status.json\\\"), ... ATOMIC_MOVE)\" — not enough context in diff to assess whether this file path is shared across concurrent workers or deployments, but the code introduces cross-process file coordination and hidden coupling between the Java workflow and the Next.js API. If this is intended as a shared boundary, smallest refactoring: introduce a dedicated status-store abstraction and make the API consume that contract instead of a raw filesystem path."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Test Quality",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "The diff introduces new API behavior, client-side data fetching, and file-backed learning-status generation, but there are no tests covering the new route, the dashboard rendering, or the Java snapshot writer.",
+        "Test Suggestion 1: Add an API test for GET /api/learning that verifies it returns the mock status when data/learning/status.json is missing or unreadable, and returns parsed JSON when the file exists; this protects the fallback path and file-read integration.",
+        "Test Suggestion 2: Add a component/integration test for the learning dashboard page that mocks /api/learning responses for both populated and empty states, asserting summary cards, schedule rows, and empty-state messaging render correctly; this covers the new client fetch flow and conditional UI branches.",
+        "Test Suggestion 3: Add a Java unit test for LearningActivityImpl.writeLearningStatus that verifies it writes a complete status snapshot with the expected schedules and active lists, and that I/O failures are logged but do not throw; this protects the new persistence path and error handling."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Security",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "app/api/learning/route.ts: GET() exposes the full contents of data/learning/status.json with no authentication or authorization checks. The JSON includes repository-level learning telemetry, active heuristics, prompt patches, and calibration data; any unauthenticated user who can reach /api/learning can read internal operational data and model-tuning decisions. This is an access-control bypass for a new dashboard API endpoint.",
+        "java/temporal-review/src/main/java/com/utm/temporal/activity/LearningActivityImpl.java: writeLearningStatus() persists learning status to a predictable shared path (data/learning/status.json) and the Next.js API serves it directly. Because the file is world-readable within the app context and contains internal agent evidence strings and rule changes, this creates an unintended data exposure channel if the endpoint is reachable externally. The attack vector is simple HTTP GET to /api/learning; impact is disclosure of internal review intelligence and heuristics.",
+        "app/api/learning/route.ts: JSON.parse(content) on a file read from disk is performed without schema validation. If an attacker or compromised process can modify data/learning/status.json, malformed or oversized JSON could be used to crash the endpoint or inject unexpected fields into the dashboard. While not a direct code-execution issue, the lack of validation makes the new file-backed API brittle and increases the blast radius of file tampering."
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Complexity",
+      "riskLevel": "MEDIUM",
+      "recommendation": "REQUEST_CHANGES",
+      "findings": [
+        "Cyclomatic Complexity: 14",
+        "Cognitive Complexity: 16",
+        "Primary driver: the new Java writeLearningStatus method adds multiple loops, try/catch blocks, and repeated map-building branches"
+      ],
+      "promptTokens": 0,
+      "completionTokens": 0
+    },
+    {
+      "agentName": "Priority",
+      "riskLevel": "HIGH",
+      "recommendation": "BLOCK",
+      "findings": [
+        "P0: GET /api/learning is publicly readable and exposes internal learning telemetry, prompt patches, calibration data, and other repository-level operational details; add authentication/authorization or restrict the endpoint before merge. [Security] - Require access control and verify only intended users can fetch this data.",
+        "P0: The API reads and parses data/learning/status.json without schema validation or size/shape checks, so a tampered or malformed file can crash the endpoint or surface unexpected fields; validate the payload and fail closed on parse/validation errors. [Security] - Add strict JSON schema validation and bounded error handling.",
+        "P1: The new learning dashboard/API flow and Java snapshot writer have no tests covering missing-file fallback, populated-state rendering, or persistence behavior; add API, UI, and Java unit tests for the new paths. [TestQuality] - Cover both empty and populated responses plus write/error handling.",
+        "P1: The Java activity now mixes learning analysis with filesystem persistence, creating hidden coupling and harder-to-maintain workflow logic; extract status writing behind a dedicated persistence adapter. [CodeQuality] - Separate decision logic from I/O and keep the activity focused.",
+        "P2: The API currently swallows all read/parse errors and returns mock data even when the status file exists but is corrupt or unreadable, which hides real failures; catch only the expected missing-file case and return a distinct error for other I/O issues. [CodeQuality] - Preserve the fallback for absent files but surface actual corruption/read errors.",
+        "P2: The new writeLearningStatus method has elevated cyclomatic/cognitive complexity from repeated branching and map-building; simplify by extracting helper functions for snapshot assembly and atomic write steps. [Complexity] - Break the method into smaller, single-purpose units."
+      ],
+      "promptTokens": 1467,
+      "completionTokens": 406
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-04-16T13:48:24.206Z",
+    "tookMs": 22013,
+    "model": "gpt-5.4-mini",
+    "totalPromptTokens": 1467,
+    "totalCompletionTokens": 406,
+    "estimatedCost": 0.00292725
+  },
+  "prNumber": 69,
+  "prTitle": "[WIP] Add visibility into current learning progress",
+  "author": "Copilot"
+}
