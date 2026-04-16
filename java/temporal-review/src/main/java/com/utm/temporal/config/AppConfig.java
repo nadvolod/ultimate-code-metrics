@@ -29,7 +29,7 @@ public class AppConfig {
 
     public static final String DEFAULT_TEMPORAL_ADDRESS = "localhost:7233";
     public static final String DEFAULT_TASK_QUEUE = "pr-review";
-    public static final String DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+    public static final String DEFAULT_OPENAI_MODEL = "gpt-5.4-mini";
     public static final int DEFAULT_ACTIVITY_TIMEOUT_SECONDS = 60;
     public static final int DEFAULT_RETRY_INTERVAL_SECONDS = 5;
 
