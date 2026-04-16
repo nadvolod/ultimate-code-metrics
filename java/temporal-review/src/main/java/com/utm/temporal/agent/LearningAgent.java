@@ -47,7 +47,7 @@ public class LearningAgent {
             );
 
             LlmOptions options = new LlmOptions(
-                    System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+                    System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL),
                     0.2,
                     "json_object"
             );

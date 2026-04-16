@@ -196,7 +196,7 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
      *   gpt-4o:       input $2.50,  output $10.00
      *   gpt-4.1-mini: input $0.40,  output $1.60
      *   gpt-4.1:      input $2.00,  output $8.00
-     *   gpt-5.4-mini: input $0.40,  output $1.60
+     *   gpt-5.4-mini: input $0.75,  output $4.50
      */
     static double estimateCost(String model, int promptTokens, int completionTokens) {
         double inputPer1M;
@@ -206,14 +206,14 @@ public class PRReviewWorkflowImpl implements PRReviewWorkflow {
         } else if (model != null && model.contains("4o")) {
             inputPer1M = 2.50; outputPer1M = 10.00;
         } else if (model != null && model.contains("5.4-mini")) {
-            inputPer1M = 0.40; outputPer1M = 1.60;
+            inputPer1M = 0.75; outputPer1M = 4.50;
         } else if (model != null && model.contains("4.1-mini")) {
             inputPer1M = 0.40; outputPer1M = 1.60;
         } else if (model != null && model.contains("4.1")) {
             inputPer1M = 2.00; outputPer1M = 8.00;
         } else {
-            // Default to gpt-4o-mini pricing for unknown models
-            inputPer1M = 0.15; outputPer1M = 0.60;
+            // Default to gpt-5.4-mini pricing (matches AppConfig.DEFAULT_OPENAI_MODEL)
+            inputPer1M = 0.75; outputPer1M = 4.50;
         }
         return (promptTokens * inputPer1M + completionTokens * outputPer1M) / 1_000_000.0;
     }

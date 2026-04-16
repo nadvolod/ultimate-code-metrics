@@ -55,9 +55,9 @@ class PRReviewWorkflowImplTest {
 
     @Test
     void estimateCost_gpt5Dot4Mini_usesCorrectPricing() {
-        // gpt-5.4-mini: input $0.40, output $1.60 per 1M tokens
+        // gpt-5.4-mini: input $0.75, output $4.50 per 1M tokens
         double cost = PRReviewWorkflowImpl.estimateCost("gpt-5.4-mini", 1_000_000, 1_000_000);
-        assertEquals(2.00, cost, 1e-9);
+        assertEquals(5.25, cost, 1e-9);
     }
 
     // -------------------------------------------------------------------------
@@ -83,15 +83,17 @@ class PRReviewWorkflowImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void estimateCost_nullModel_defaultsToGpt4oMiniPricing() {
+    void estimateCost_nullModel_defaultsToGpt5Dot4MiniPricing() {
+        // Default fallback uses gpt-5.4-mini pricing: $0.75 + $4.50 = $5.25
         double cost = PRReviewWorkflowImpl.estimateCost(null, 1_000_000, 1_000_000);
-        assertEquals(0.75, cost, 1e-9);
+        assertEquals(5.25, cost, 1e-9);
     }
 
     @Test
-    void estimateCost_unknownModel_defaultsToGpt4oMiniPricing() {
+    void estimateCost_unknownModel_defaultsToGpt5Dot4MiniPricing() {
+        // Default fallback uses gpt-5.4-mini pricing: $0.75 + $4.50 = $5.25
         double cost = PRReviewWorkflowImpl.estimateCost("some-future-model", 1_000_000, 1_000_000);
-        assertEquals(0.75, cost, 1e-9);
+        assertEquals(5.25, cost, 1e-9);
     }
 
     // -------------------------------------------------------------------------

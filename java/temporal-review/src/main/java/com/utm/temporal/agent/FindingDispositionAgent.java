@@ -57,7 +57,7 @@ public class FindingDispositionAgent {
             );
 
             LlmOptions options = new LlmOptions(
-                    System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o-mini"),
+                    System.getenv().getOrDefault("OPENAI_MODEL", OpenAiLlmClient.DEFAULT_MODEL),
                     0.1,
                     "json_object"
             );
