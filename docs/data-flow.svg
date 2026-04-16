@@ -1,0 +1,358 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="temporalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="agentGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+    <linearGradient id="priorityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="llmGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="approveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="inputGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="heuristicsGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#475569"/>
+    </marker>
+    <marker id="arrowCyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#0891b2"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#d97706"/>
+    </marker>
+  </defs>
+
+  <style>
+    @keyframes agentPulse1 { 0%,18%,100%{filter:none} 8%,14%{filter:url(#softGlow)} }
+    @keyframes agentPulse2 { 0%,10%,30%,100%{filter:none} 18%,26%{filter:url(#softGlow)} }
+    @keyframes agentPulse3 { 0%,22%,42%,100%{filter:none} 28%,36%{filter:url(#softGlow)} }
+    @keyframes agentPulse4 { 0%,34%,54%,100%{filter:none} 38%,48%{filter:url(#softGlow)} }
+    @keyframes agentPulse5 { 0%,50%,68%,100%{filter:none} 54%,62%{filter:url(#softGlow)} }
+    @keyframes outputPulse { 0%,78%,100%{filter:none} 84%,94%{filter:url(#softGlow)} }
+    .title { font-size: 22px; font-weight: 700; fill: #f1f5f9; }
+    .subtitle { font-size: 13px; fill: #94a3b8; }
+    .box-label { font-size: 12px; font-weight: 600; fill: #f8fafc; }
+    .box-sublabel { font-size: 10px; fill: #cbd5e1; }
+    .agent-label { font-size: 11px; font-weight: 600; fill: #f8fafc; }
+    .agent-icon { font-size: 15px; }
+    .legend-text { font-size: 10px; fill: #94a3b8; }
+    .step-num { font-size: 9px; font-weight: 700; fill: #f8fafc; }
+    .tech-badge { font-size: 8px; font-weight: 600; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1200" height="750" fill="url(#bgGrad)" rx="12"/>
+  <g opacity="0.03">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#94a3b8" stroke-width="0.5"/>
+    </pattern>
+    <rect width="1200" height="750" fill="url(#grid)"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="42" text-anchor="middle" class="title">Ultimate Test Metrics — Data Flow</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">PR Review Orchestration via Temporal Workflows</text>
+
+  <!-- ========== PR INPUT ========== -->
+  <g>
+    <rect x="30" y="250" width="130" height="80" rx="10" fill="url(#inputGrad)" opacity="0.9">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="3s" repeatCount="indefinite"/>
+    </rect>
+    <text x="95" y="278" text-anchor="middle" class="box-label">PR Input</text>
+    <text x="95" y="294" text-anchor="middle" class="box-sublabel">ReviewRequest JSON</text>
+    <rect x="42" y="308" width="106" height="16" rx="4" fill="#1e3a5f" opacity="0.9"/>
+    <text x="95" y="319" text-anchor="middle" class="tech-badge" fill="#93c5fd">GitHub API</text>
+  </g>
+  <!-- Step 1 -->
+  <circle cx="30" cy="250" r="10" fill="#3b82f6"/>
+  <text x="30" y="254" text-anchor="middle" class="step-num">1</text>
+
+  <!-- ========== TEMPORAL BOUNDARY ========== -->
+  <rect x="190" y="88" width="780" height="570" rx="14" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.4">
+    <animate attributeName="stroke-opacity" values="0.3;0.6;0.3" dur="4s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="210" y="80" width="280" height="22" rx="6" fill="#6366f1" opacity="0.8"/>
+  <text x="350" y="95" text-anchor="middle" font-size="11" font-weight="600" fill="#f0f0ff">Temporal Server (SDK v1.34.0)</text>
+
+  <!-- ========== WORKER APP ========== -->
+  <g>
+    <rect x="220" y="118" width="150" height="52" rx="8" fill="#334155" stroke="#475569" stroke-width="1"/>
+    <text x="295" y="138" text-anchor="middle" class="box-label">WorkerApp</text>
+    <text x="295" y="152" text-anchor="middle" class="box-sublabel">CLI Entry Point</text>
+    <rect x="246" y="156" width="98" height="13" rx="3" fill="#1e293b" opacity="0.9"/>
+    <text x="295" y="165" text-anchor="middle" class="tech-badge" fill="#94a3b8">Java / Maven</text>
+  </g>
+
+  <!-- Arrow: Input → WorkerApp -->
+  <path id="inputPath" d="M160,290 Q190,290 220,200 Q240,170 295,170" stroke="#3b82f6" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <circle r="5" fill="#3b82f6" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="0s"><mpath href="#inputPath"/></animateMotion>
+    <animate attributeName="opacity" values="1;1;0;0;0;0;0;0;0;0;0;0;0;1" dur="14s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Arrow: WorkerApp → Workflow -->
+  <path d="M295,170 L295,195" stroke="#475569" stroke-width="1.5" marker-end="url(#arrowGray)" fill="none"/>
+
+  <!-- ========== PR REVIEW WORKFLOW ========== -->
+  <g>
+    <rect x="210" y="198" width="170" height="55" rx="8" fill="url(#temporalGrad)" opacity="0.9"/>
+    <text x="295" y="220" text-anchor="middle" class="box-label">PRReviewWorkflow</text>
+    <text x="295" y="236" text-anchor="middle" class="box-sublabel">Orchestrator</text>
+  </g>
+  <!-- Step 2 -->
+  <circle cx="210" cy="198" r="10" fill="#6366f1"/>
+  <text x="210" y="202" text-anchor="middle" class="step-num">2</text>
+
+  <!-- ========== LEARNING INSIGHTS DB ========== -->
+  <g>
+    <rect x="210" y="280" width="170" height="42" rx="8" fill="url(#dbGrad)" opacity="0.75">
+      <animate attributeName="opacity" values="0.65;0.85;0.65" dur="5s" repeatCount="indefinite"/>
+    </rect>
+    <text x="295" y="298" text-anchor="middle" class="box-label">Learning Insights</text>
+    <rect x="242" y="304" width="106" height="13" rx="3" fill="#1e1040" opacity="0.9"/>
+    <text x="295" y="313" text-anchor="middle" class="tech-badge" fill="#c4b5fd">Neon Postgres</text>
+  </g>
+  <path d="M295,253 L295,280" stroke="#a855f7" stroke-width="1" stroke-dasharray="4,3" fill="none" opacity="0.5"/>
+
+  <!-- ========== SEQUENTIAL AGENTS GROUP ========== -->
+  <!-- Bounding box showing these 4 run in sequence -->
+  <rect x="440" y="110" width="200" height="400" rx="10" fill="#06b6d4" opacity="0.06" stroke="#0891b2" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="540" y="128" text-anchor="middle" font-size="9" fill="#67e8f9" font-weight="600" opacity="0.7">Sequential Agents (1 → 4)</text>
+
+  <!-- ONE arrow from Workflow → Agent group -->
+  <path id="toAgents" d="M380,225 C410,225 420,165 450,165" stroke="#475569" stroke-width="1.5" fill="none" marker-end="url(#arrowGray)"/>
+  <!-- Step 3 -->
+  <circle cx="440" cy="110" r="10" fill="#06b6d4"/>
+  <text x="440" y="114" text-anchor="middle" class="step-num">3</text>
+
+  <!-- Agent 1: Code Quality -->
+  <g style="animation: agentPulse1 14s ease-in-out infinite">
+    <rect x="455" y="140" width="170" height="46" rx="8" fill="url(#agentGrad)" opacity="0.9"/>
+    <text x="474" y="163" class="agent-icon">&#128270;</text>
+    <text x="498" y="160" class="agent-label">Code Quality</text>
+    <text x="498" y="174" class="box-sublabel">CodeQualityAgent</text>
+  </g>
+
+  <!-- Sequential arrow 1→2 -->
+  <line x1="540" y1="186" x2="540" y2="212" stroke="#0891b2" stroke-width="1.2" marker-end="url(#arrowCyan)" opacity="0.6"/>
+
+  <!-- Agent 2: Test Quality -->
+  <g style="animation: agentPulse2 14s ease-in-out infinite">
+    <rect x="455" y="216" width="170" height="46" rx="8" fill="url(#agentGrad)" opacity="0.9"/>
+    <text x="474" y="239" class="agent-icon">&#9989;</text>
+    <text x="498" y="236" class="agent-label">Test Quality</text>
+    <text x="498" y="250" class="box-sublabel">TestQualityAgent</text>
+  </g>
+
+  <!-- Sequential arrow 2→3 -->
+  <line x1="540" y1="262" x2="540" y2="288" stroke="#0891b2" stroke-width="1.2" marker-end="url(#arrowCyan)" opacity="0.6"/>
+
+  <!-- Agent 3: Security -->
+  <g style="animation: agentPulse3 14s ease-in-out infinite">
+    <rect x="455" y="292" width="170" height="46" rx="8" fill="url(#agentGrad)" opacity="0.9"/>
+    <text x="474" y="315" class="agent-icon">&#128274;</text>
+    <text x="498" y="312" class="agent-label">Security</text>
+    <text x="498" y="326" class="box-sublabel">SecurityAgent</text>
+  </g>
+
+  <!-- Sequential arrow 3→4 -->
+  <line x1="540" y1="338" x2="540" y2="364" stroke="#0891b2" stroke-width="1.2" marker-end="url(#arrowCyan)" opacity="0.6"/>
+
+  <!-- Agent 4: Complexity -->
+  <g style="animation: agentPulse4 14s ease-in-out infinite">
+    <rect x="455" y="368" width="170" height="46" rx="8" fill="url(#agentGrad)" opacity="0.9"/>
+    <text x="474" y="391" class="agent-icon">&#129518;</text>
+    <text x="498" y="388" class="agent-label">Complexity</text>
+    <text x="498" y="402" class="box-sublabel">ComplexityAgent</text>
+  </g>
+
+  <!-- Animated dot flowing down through agents sequentially -->
+  <path id="seqFlow" d="M540,186 L540,212 L540,262 L540,288 L540,338 L540,364" stroke="none" fill="none"/>
+  <circle r="3.5" fill="#06b6d4" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="1.5s"><mpath href="#seqFlow"/></animateMotion>
+    <animate attributeName="opacity" values="0;1;1;1;1;0;0;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="1.5s"/>
+  </circle>
+
+  <!-- ========== EACH AGENT → LLM ========== -->
+  <g>
+    <rect x="710" y="220" width="130" height="130" rx="12" fill="url(#llmGrad)" opacity="0.12"/>
+    <rect x="720" y="245" width="110" height="80" rx="8" fill="url(#llmGrad)" opacity="0.9">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    <text x="775" y="270" text-anchor="middle" font-size="16">&#129302;</text>
+    <text x="775" y="288" text-anchor="middle" class="box-label">OpenAI API</text>
+    <text x="775" y="302" text-anchor="middle" class="box-sublabel">gpt-4o-mini</text>
+    <rect x="727" y="308" width="96" height="13" rx="3" fill="#78350f" opacity="0.9"/>
+    <text x="775" y="317" text-anchor="middle" class="tech-badge" fill="#fde68a">OkHttp Client</text>
+  </g>
+  <!-- Step 4 -->
+  <circle cx="720" cy="228" r="10" fill="#f59e0b"/>
+  <text x="720" y="232" text-anchor="middle" class="step-num">4</text>
+
+  <!-- Dashed lines: each agent → LLM -->
+  <path id="toLlm1" d="M625,163 Q670,163 715,270" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.4"/>
+  <path id="toLlm2" d="M625,239 Q670,239 715,278" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.4"/>
+  <path id="toLlm3" d="M625,315 L715,290" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.4"/>
+  <path id="toLlm4" d="M625,391 Q670,391 715,300" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.4"/>
+
+  <!-- Animated dots: agents → LLM -->
+  <circle r="3" fill="#f59e0b" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="1.5s"><mpath href="#toLlm1"/></animateMotion>
+    <animate attributeName="opacity" values="0;1;1;0;0;0;0;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="1.5s"/>
+  </circle>
+  <circle r="3" fill="#f59e0b" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="2.8s"><mpath href="#toLlm2"/></animateMotion>
+    <animate attributeName="opacity" values="0;0;1;1;0;0;0;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="2.8s"/>
+  </circle>
+  <circle r="3" fill="#f59e0b" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="4.0s"><mpath href="#toLlm3"/></animateMotion>
+    <animate attributeName="opacity" values="0;0;0;1;1;0;0;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="4.0s"/>
+  </circle>
+  <circle r="3" fill="#f59e0b" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="5.2s"><mpath href="#toLlm4"/></animateMotion>
+    <animate attributeName="opacity" values="0;0;0;0;1;1;0;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="5.2s"/>
+  </circle>
+
+  <!-- ========== ALL RESULTS → PRIORITY AGENT ========== -->
+  <!-- "All 4 results" label on the collection arrows -->
+  <path d="M540,414 L540,450" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowAmber)" fill="none" opacity="0.7"/>
+  <path d="M500,414 Q490,432 490,448" stroke="#d97706" stroke-width="1" stroke-dasharray="3,2" fill="none" opacity="0.4"/>
+  <path d="M580,414 Q590,432 590,448" stroke="#d97706" stroke-width="1" stroke-dasharray="3,2" fill="none" opacity="0.4"/>
+  <text x="540" y="443" text-anchor="middle" font-size="8" fill="#fbbf24" font-weight="600" opacity="0.8">all 4 results</text>
+
+  <!-- Agent 5: Priority (visually distinct — receives all prior results) -->
+  <g style="animation: agentPulse5 14s ease-in-out infinite">
+    <rect x="450" y="455" width="180" height="52" rx="8" fill="url(#priorityGrad)" opacity="0.9"/>
+    <text x="471" y="479" class="agent-icon">&#9878;</text>
+    <text x="498" y="476" class="agent-label" fill="#fffbeb">Priority Agent</text>
+    <text x="498" y="492" class="box-sublabel" fill="#fef3c7">Ranks all findings</text>
+  </g>
+  <!-- Step 5 -->
+  <circle cx="450" cy="455" r="10" fill="#d97706"/>
+  <text x="450" y="459" text-anchor="middle" class="step-num">5</text>
+
+  <!-- Priority → LLM -->
+  <path id="toLlm5" d="M630,480 Q700,480 720,310" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3" fill="none" opacity="0.4"/>
+  <circle r="3" fill="#f59e0b" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="6.5s"><mpath href="#toLlm5"/></animateMotion>
+    <animate attributeName="opacity" values="0;0;0;0;0;1;1;0;0;0;0;0;0;0" dur="14s" repeatCount="indefinite" begin="6.5s"/>
+  </circle>
+
+  <!-- ========== HEURISTICS ENGINE ========== -->
+  <g>
+    <rect x="450" y="536" width="180" height="42" rx="8" fill="url(#heuristicsGrad)" opacity="0.85"/>
+    <text x="540" y="555" text-anchor="middle" class="box-label">Heuristics Engine</text>
+    <text x="540" y="568" text-anchor="middle" class="box-sublabel">Post-LLM adjustments</text>
+  </g>
+  <path d="M540,507 L540,536" stroke="#ec4899" stroke-width="1.2" marker-end="url(#arrowGray)" fill="none" opacity="0.5"/>
+
+  <!-- ========== FINAL OUTPUT (merged Aggregation + ReviewResponse) ========== -->
+  <g style="animation: outputPulse 14s ease-in-out infinite">
+    <rect x="210" y="530" width="190" height="80" rx="10" fill="url(#approveGrad)" opacity="0.9"/>
+    <text x="305" y="552" text-anchor="middle" class="box-label">ReviewResponse</text>
+    <text x="305" y="568" text-anchor="middle" class="box-sublabel" fill="#d1fae5">Aggregate: BLOCK > REQ_CHANGES > APPROVE</text>
+    <text x="305" y="584" text-anchor="middle" class="box-sublabel" fill="#d1fae5">+ metadata, tokens, cost</text>
+    <rect x="247" y="592" width="116" height="13" rx="3" fill="#064e3b" opacity="0.9"/>
+    <text x="305" y="601" text-anchor="middle" class="tech-badge" fill="#6ee7b7">JSON Output</text>
+  </g>
+  <!-- Step 6 -->
+  <circle cx="210" cy="530" r="10" fill="#10b981"/>
+  <text x="210" y="534" text-anchor="middle" class="step-num">6</text>
+
+  <!-- Arrow: Heuristics → Output -->
+  <path id="toOutput" d="M450,557 L400,557" stroke="#10b981" stroke-width="1.5" fill="none" marker-end="url(#arrowGray)" opacity="0.6"/>
+  <circle r="4" fill="#10b981" filter="url(#glow)">
+    <animateMotion dur="14s" repeatCount="indefinite" begin="9s"><mpath href="#toOutput"/></animateMotion>
+    <animate attributeName="opacity" values="0;0;0;0;0;0;0;0;0;1;1;0;0;0" dur="14s" repeatCount="indefinite" begin="9s"/>
+  </circle>
+
+  <!-- ========== OUTCOME RECORDING (side-effect) ========== -->
+  <g>
+    <rect x="210" y="636" width="170" height="42" rx="8" fill="url(#dbGrad)" opacity="0.7">
+      <animate attributeName="opacity" values="0.6;0.8;0.6" dur="6s" repeatCount="indefinite"/>
+    </rect>
+    <text x="295" y="654" text-anchor="middle" class="box-label">Record Outcome</text>
+    <rect x="242" y="662" width="106" height="13" rx="3" fill="#1e1040" opacity="0.9"/>
+    <text x="295" y="671" text-anchor="middle" class="tech-badge" fill="#c4b5fd">Neon Postgres</text>
+  </g>
+  <path d="M305,610 L295,636" stroke="#a855f7" stroke-width="1" stroke-dasharray="4,3" fill="none" opacity="0.4"/>
+  <text x="318" y="626" font-size="8" fill="#a78bfa" opacity="0.6">non-blocking</text>
+
+  <!-- ========== LEGEND (bottom right, fixed spacing) ========== -->
+  <g transform="translate(830, 660)">
+    <rect width="340" height="56" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1" opacity="0.9"/>
+    <text x="170" y="16" text-anchor="middle" class="legend-text" font-weight="600" fill="#cbd5e1">Legend</text>
+
+    <circle cx="24" cy="34" r="4" fill="#6366f1"/>
+    <text x="34" y="38" class="legend-text">Workflow</text>
+
+    <circle cx="92" cy="34" r="4" fill="#06b6d4"/>
+    <text x="102" y="38" class="legend-text">Agent</text>
+
+    <circle cx="146" cy="34" r="4" fill="#f59e0b"/>
+    <text x="156" y="38" class="legend-text">LLM / Priority</text>
+
+    <circle cx="240" cy="34" r="4" fill="#a855f7"/>
+    <text x="250" y="38" class="legend-text">Database</text>
+
+    <circle cx="24" cy="48" r="4" fill="#ec4899"/>
+    <text x="34" y="52" class="legend-text">Heuristics</text>
+
+    <circle cx="104" cy="48" r="4" fill="#10b981"/>
+    <text x="114" y="52" class="legend-text">Output</text>
+  </g>
+
+  <!-- ========== AMBIENT PARTICLES ========== -->
+  <circle r="2" fill="#6366f1" opacity="0.3">
+    <animateMotion path="M220,150 Q550,100 900,200 Q700,500 300,550 Q200,400 220,150" dur="20s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="20s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="1.5" fill="#06b6d4" opacity="0.2">
+    <animateMotion path="M300,200 Q600,150 800,350 Q500,500 250,400 Q200,300 300,200" dur="25s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.1;0.3;0.1" dur="25s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ========== LINKEDIN ATTRIBUTION ========== -->
+  <g transform="translate(30, 710)">
+    <!-- LinkedIn logo (official rounded square + "in") -->
+    <rect x="0" y="0" width="18" height="18" rx="4" fill="#0A66C2"/>
+    <text x="9" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff" font-family="'Segoe UI', sans-serif">in</text>
+    <!-- Name -->
+    <text x="24" y="13" font-size="12" fill="#94a3b8" font-weight="500">Nikolay Advolodkin</text>
+  </g>
+</svg>

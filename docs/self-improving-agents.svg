@@ -1,0 +1,314 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1a1f3a"/>
+    </linearGradient>
+
+    <!-- Node gradients -->
+    <linearGradient id="wfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="outGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="dispGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="learnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#db2777"/>
+    </linearGradient>
+    <linearGradient id="heurGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="fbGrad" x1="0%" y1="100%" x2="0%" y2="0%" gradientUnits="userSpaceOnUse">
+      <stop offset="15%" stop-color="#0891b2"/>
+      <stop offset="50%" stop-color="#22d3ee"/>
+      <stop offset="85%" stop-color="#0891b2"/>
+    </linearGradient>
+
+    <!-- Glow filters -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="particleGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Arrow markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+    </marker>
+    <marker id="fbArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22d3ee"/>
+    </marker>
+
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(148,163,184,0.04)" stroke-width="0.5"/>
+    </pattern>
+
+    <!-- Radial glow behind feedback loop -->
+    <radialGradient id="fbRadial" cx="870" cy="380" r="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Animation paths (invisible, used by animateMotion) -->
+    <path id="ap1" d="M 420 170 L 104 210 L 104 252 L 420 284" fill="none"/>
+    <path id="ap2" d="M 420 170 L 260 210 L 260 252 L 420 284" fill="none"/>
+    <path id="ap3" d="M 420 170 L 420 210 L 420 252 L 420 284" fill="none"/>
+    <path id="ap4" d="M 420 170 L 580 210 L 580 252 L 420 284" fill="none"/>
+    <path id="ap5" d="M 420 170 L 736 210 L 736 252 L 420 284" fill="none"/>
+    <path id="pp" d="M 420 324 L 420 558" fill="none"/>
+    <path id="fp" d="M 540 582 L 830 582 Q 870 582 870 542 L 870 184 Q 870 144 830 144 L 550 144" fill="none"/>
+  </defs>
+
+  <style>
+    @keyframes dashFlow { to { stroke-dashoffset: -20; } }
+    @keyframes feedbackFlow { to { stroke-dashoffset: -40; } }
+    @keyframes feedbackGlow {
+      0%, 100% { stroke-opacity: 0.5; }
+      50% { stroke-opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.75; }
+      50% { opacity: 1; }
+    }
+    @keyframes badgePulse {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 0.9; }
+    }
+    @keyframes spinRing {
+      to { transform: rotate(360deg); }
+    }
+    .flow { stroke-dasharray: 8 6; animation: dashFlow 1.2s linear infinite; }
+    .fb-flow { stroke-dasharray: 12 8; animation: feedbackFlow 1.5s linear infinite, feedbackGlow 3s ease-in-out infinite; }
+    .agent-pulse { animation: pulse 3s ease-in-out infinite; }
+    .ap-d1 { animation-delay: 0s; }
+    .ap-d2 { animation-delay: 0.5s; }
+    .ap-d3 { animation-delay: 1.0s; }
+    .ap-d4 { animation-delay: 1.5s; }
+    .ap-d5 { animation-delay: 2.0s; }
+    .badge-pulse { animation: badgePulse 2.5s ease-in-out infinite; }
+    .bp-d1 { animation-delay: 0s; }
+    .bp-d2 { animation-delay: 0.8s; }
+    .bp-d3 { animation-delay: 1.6s; }
+    .spin-ring { transform-origin: 870px 380px; animation: spinRing 6s linear infinite; }
+  </style>
+
+  <!-- ==================== BACKGROUND ==================== -->
+  <rect width="1000" height="700" fill="url(#bg)"/>
+  <rect width="1000" height="700" fill="url(#grid)"/>
+  <rect x="600" y="100" width="400" height="560" fill="url(#fbRadial)"/>
+
+  <!-- ==================== TITLE ==================== -->
+  <text x="420" y="30" text-anchor="middle" fill="#f1f5f9" font-size="22" font-weight="700" letter-spacing="0.5">Self-Improving AI Agent System</text>
+  <text x="420" y="48" text-anchor="middle" fill="#64748b" font-size="12" letter-spacing="1">Temporal Workflow with Learning Feedback Loop</text>
+
+  <!-- ==================== CONNECTION LINES ==================== -->
+
+  <!-- PR to Workflow -->
+  <line x1="420" y1="98" x2="420" y2="118" stroke="#475569" stroke-width="2" class="flow" marker-end="url(#arrow)"/>
+
+  <!-- Workflow to Agents (fan-out) -->
+  <line x1="420" y1="170" x2="104" y2="210" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="420" y1="170" x2="260" y2="210" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="420" y1="170" x2="420" y2="210" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="420" y1="170" x2="580" y2="210" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="420" y1="170" x2="736" y2="210" stroke="#475569" stroke-width="1.5" class="flow"/>
+
+  <!-- Agents to Aggregate (fan-in) -->
+  <line x1="104" y1="252" x2="420" y2="284" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="260" y1="252" x2="420" y2="284" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="420" y1="252" x2="420" y2="284" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="580" y1="252" x2="420" y2="284" stroke="#475569" stroke-width="1.5" class="flow"/>
+  <line x1="736" y1="252" x2="420" y2="284" stroke="#475569" stroke-width="1.5" class="flow"/>
+
+  <!-- Vertical flow: Aggregate → Output → Disposition → Learning → Heuristics -->
+  <line x1="420" y1="324" x2="420" y2="344" stroke="#475569" stroke-width="2" class="flow" marker-end="url(#arrow)"/>
+  <line x1="420" y1="378" x2="420" y2="402" stroke="#475569" stroke-width="2" class="flow" marker-end="url(#arrow)"/>
+  <line x1="420" y1="450" x2="420" y2="480" stroke="#475569" stroke-width="2" class="flow" marker-end="url(#arrow)"/>
+  <line x1="420" y1="528" x2="420" y2="558" stroke="#475569" stroke-width="2" class="flow" marker-end="url(#arrow)"/>
+
+  <!-- ==================== FEEDBACK LOOP ==================== -->
+  <path d="M 540 582 L 830 582 Q 870 582 870 542 L 870 184 Q 870 144 830 144 L 550 144"
+        stroke="url(#fbGrad)" stroke-width="3" fill="none" class="fb-flow"
+        marker-end="url(#fbArrow)"/>
+
+  <!-- Spinning ring indicator at loop center -->
+  <circle cx="870" cy="380" r="18" fill="none" stroke="#22d3ee" stroke-width="1.5"
+          stroke-dasharray="75 38" opacity="0.5" class="spin-ring"/>
+  <text x="870" y="385" text-anchor="middle" fill="#22d3ee" font-size="14" font-weight="700" opacity="0.6">&#8734;</text>
+
+  <!-- ==================== NODE BOXES ==================== -->
+
+  <!-- PR Input -->
+  <rect x="335" y="62" width="170" height="36" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="420" y="85" text-anchor="middle" fill="#e0f2fe" font-size="14" font-weight="600">PR Input</text>
+
+  <!-- Temporal Workflow -->
+  <rect x="290" y="118" width="260" height="52" rx="10" fill="#1e293b" stroke="url(#wfGrad)" stroke-width="2.5" filter="url(#glow)"/>
+  <text x="420" y="141" text-anchor="middle" fill="#f1f5f9" font-size="15" font-weight="700">Temporal Workflow</text>
+  <text x="420" y="159" text-anchor="middle" fill="#818cf8" font-size="10" font-weight="500" letter-spacing="1.5">ORCHESTRATOR</text>
+
+  <!-- Parallel Analysis annotation -->
+  <text x="420" y="198" text-anchor="middle" fill="#64748b" font-size="10" font-style="italic">Parallel Analysis</text>
+
+  <!-- Agent 1: Code Quality -->
+  <g class="agent-pulse ap-d1">
+    <rect x="40" y="210" width="128" height="42" rx="7" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+    <circle cx="160" cy="218" r="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="104" y="236" text-anchor="middle" fill="#e0e7ff" font-size="11.5" font-weight="600">Code Quality</text>
+  </g>
+
+  <!-- Agent 2: Test Quality -->
+  <g class="agent-pulse ap-d2">
+    <rect x="196" y="210" width="128" height="42" rx="7" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+    <circle cx="316" cy="218" r="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="260" y="236" text-anchor="middle" fill="#e0e7ff" font-size="11.5" font-weight="600">Test Quality</text>
+  </g>
+
+  <!-- Agent 3: Security -->
+  <g class="agent-pulse ap-d3">
+    <rect x="358" y="210" width="124" height="42" rx="7" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+    <circle cx="474" cy="218" r="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="420" y="236" text-anchor="middle" fill="#e0e7ff" font-size="11.5" font-weight="600">Security</text>
+  </g>
+
+  <!-- Agent 4: Complexity -->
+  <g class="agent-pulse ap-d4">
+    <rect x="516" y="210" width="128" height="42" rx="7" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+    <circle cx="636" cy="218" r="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="580" y="236" text-anchor="middle" fill="#e0e7ff" font-size="11.5" font-weight="600">Complexity</text>
+  </g>
+
+  <!-- Agent 5: Priority -->
+  <g class="agent-pulse ap-d5">
+    <rect x="672" y="210" width="128" height="42" rx="7" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+    <circle cx="792" cy="218" r="4" fill="#a78bfa" opacity="0.5"/>
+    <text x="736" y="236" text-anchor="middle" fill="#e0e7ff" font-size="11.5" font-weight="600">Priority</text>
+  </g>
+
+  <!-- Aggregate Results -->
+  <rect x="320" y="284" width="200" height="40" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+  <text x="420" y="309" text-anchor="middle" fill="#f1f5f9" font-size="13" font-weight="600">Aggregate Results</text>
+
+  <!-- Review Output -->
+  <rect x="300" y="344" width="240" height="34" rx="17" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+  <text x="420" y="366" text-anchor="middle" font-size="11.5" font-weight="700">
+    <tspan fill="#34d399">APPROVE</tspan>
+    <tspan fill="#64748b" font-size="10"> · </tspan>
+    <tspan fill="#fbbf24">CHANGES</tspan>
+    <tspan fill="#64748b" font-size="10"> · </tspan>
+    <tspan fill="#f87171">BLOCK</tspan>
+  </text>
+
+  <!-- Finding Disposition -->
+  <rect x="300" y="402" width="240" height="48" rx="8" fill="#1e293b" stroke="url(#dispGrad)" stroke-width="2"/>
+  <text x="420" y="423" text-anchor="middle" fill="#f1f5f9" font-size="13" font-weight="600">Finding Disposition</text>
+  <text x="420" y="440" text-anchor="middle" fill="#fbbf24" font-size="10">Accepted vs Dismissed</text>
+
+  <!-- Learning Agent -->
+  <rect x="310" y="480" width="220" height="48" rx="8" fill="#1e293b" stroke="url(#learnGrad)" stroke-width="2" filter="url(#glow)"/>
+  <text x="420" y="501" text-anchor="middle" fill="#f1f5f9" font-size="13" font-weight="700">Learning Agent</text>
+  <text x="420" y="518" text-anchor="middle" fill="#f472b6" font-size="10">LLM Pattern Analysis</text>
+
+  <!-- Heuristics Engine -->
+  <rect x="300" y="558" width="240" height="48" rx="8" fill="#1e293b" stroke="url(#heurGrad)" stroke-width="2" filter="url(#glow)"/>
+  <text x="420" y="579" text-anchor="middle" fill="#f1f5f9" font-size="13" font-weight="700">Heuristics Engine</text>
+  <text x="420" y="596" text-anchor="middle" fill="#22d3ee" font-size="10">Deterministic Post-Processing</text>
+
+  <!-- ==================== FEEDBACK LOOP LABELS ==================== -->
+
+  <!-- Vertical label -->
+  <text transform="translate(928, 385) rotate(-90)" text-anchor="middle" fill="#22d3ee"
+        font-size="13" font-weight="700" letter-spacing="4" opacity="0.6">SELF-IMPROVING LOOP</text>
+
+  <!-- Learning output badges along the feedback path -->
+  <g class="badge-pulse bp-d1">
+    <rect x="782" y="488" width="84" height="20" rx="10" fill="#164e63" stroke="#22d3ee" stroke-width="1" opacity="0.8"/>
+    <text x="824" y="502" text-anchor="middle" fill="#67e8f9" font-size="9" font-weight="600">Heuristics</text>
+  </g>
+  <g class="badge-pulse bp-d2">
+    <rect x="782" y="378" width="84" height="20" rx="10" fill="#164e63" stroke="#22d3ee" stroke-width="1" opacity="0.8"/>
+    <text x="824" y="392" text-anchor="middle" fill="#67e8f9" font-size="9" font-weight="600">Patches</text>
+  </g>
+  <g class="badge-pulse bp-d3">
+    <rect x="782" y="268" width="84" height="20" rx="10" fill="#164e63" stroke="#22d3ee" stroke-width="1" opacity="0.8"/>
+    <text x="824" y="282" text-anchor="middle" fill="#67e8f9" font-size="9" font-weight="600">Calibrations</text>
+  </g>
+
+  <!-- ==================== ANIMATED PARTICLES ==================== -->
+
+  <!-- Agent path particles (purple, staggered) -->
+  <circle r="3.5" fill="#a78bfa" filter="url(#particleGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite" begin="0s"><mpath href="#ap1"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#a78bfa" filter="url(#particleGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite" begin="0.5s"><mpath href="#ap2"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#c4b5fd" filter="url(#particleGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite" begin="1.0s"><mpath href="#ap3"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#a78bfa" filter="url(#particleGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite" begin="1.5s"><mpath href="#ap4"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#a78bfa" filter="url(#particleGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite" begin="2.0s"><mpath href="#ap5"/></animateMotion>
+  </circle>
+
+  <!-- Processing path particles (amber) -->
+  <circle r="4" fill="#fbbf24" filter="url(#particleGlow)">
+    <animateMotion dur="4s" repeatCount="indefinite" begin="0s"><mpath href="#pp"/></animateMotion>
+  </circle>
+  <circle r="2.5" fill="#fbbf24" opacity="0.5">
+    <animateMotion dur="4s" repeatCount="indefinite" begin="0.5s"><mpath href="#pp"/></animateMotion>
+  </circle>
+
+  <!-- Feedback loop particles (cyan, 3 spaced evenly) -->
+  <circle r="5" fill="#22d3ee" filter="url(#strongGlow)">
+    <animateMotion dur="6s" repeatCount="indefinite" begin="0s"><mpath href="#fp"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#22d3ee" opacity="0.6" filter="url(#particleGlow)">
+    <animateMotion dur="6s" repeatCount="indefinite" begin="2s"><mpath href="#fp"/></animateMotion>
+  </circle>
+  <circle r="2.5" fill="#22d3ee" opacity="0.35">
+    <animateMotion dur="6s" repeatCount="indefinite" begin="4s"><mpath href="#fp"/></animateMotion>
+  </circle>
+
+  <!-- ==================== PHASE LABELS (left side) ==================== -->
+  <text x="22" y="144" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">ORCHESTRATE</text>
+  <text x="22" y="231" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">ANALYZE</text>
+  <text x="22" y="365" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">DECIDE</text>
+  <text x="22" y="426" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">EVALUATE</text>
+  <text x="22" y="504" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">LEARN</text>
+  <text x="22" y="582" fill="#475569" font-size="9" font-weight="600" letter-spacing="2" opacity="0.6">IMPROVE</text>
+
+  <!-- ==================== LEGEND ==================== -->
+  <g transform="translate(420, 645)">
+    <circle cx="-170" cy="0" r="4" fill="#a78bfa"/>
+    <text x="-160" y="4" fill="#94a3b8" font-size="10">Review Flow</text>
+    <circle cx="-65" cy="0" r="4" fill="#fbbf24"/>
+    <text x="-55" y="4" fill="#94a3b8" font-size="10">Processing</text>
+    <circle cx="30" cy="0" r="4" fill="#22d3ee"/>
+    <text x="40" y="4" fill="#94a3b8" font-size="10">Feedback Loop</text>
+    <line x1="130" y1="0" x2="155" y2="0" stroke="#475569" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="162" y="4" fill="#94a3b8" font-size="10">Data Flow</text>
+  </g>
+
+  <!-- Branding -->
+  <text x="420" y="678" text-anchor="middle" fill="#334155" font-size="10">Ultimate Test Metrics — Temporal + AI</text>
+</svg>
