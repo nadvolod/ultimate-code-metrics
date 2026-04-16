@@ -1,0 +1,113 @@
+{
+  "repository": "nadvolod/ultimate-code-metrics",
+  "learningVersion": 3,
+  "lastRunAt": "2026-04-15T03:00:00Z",
+  "nextRunAt": "2026-04-16T03:00:00Z",
+  "totalReviewsAnalyzed": 26,
+  "schedules": {
+    "outcomeCollection": {
+      "cron": "0 * * * *",
+      "description": "Collect PR outcomes from GitHub every hour",
+      "lastRunAt": "2026-04-15T22:00:00Z",
+      "status": "OK"
+    },
+    "learningAnalysis": {
+      "cron": "0 3 * * *",
+      "description": "Analyze outcomes and propose learning improvements daily",
+      "lastRunAt": "2026-04-15T03:00:00Z",
+      "status": "OK"
+    },
+    "evaluation": {
+      "cron": "0 6 * * MON",
+      "description": "Compute weekly evaluation metrics snapshot",
+      "lastRunAt": "2026-04-14T06:00:00Z",
+      "status": "OK"
+    }
+  },
+  "agentAccuracy": {
+    "CodeQuality": {
+      "agentName": "CodeQuality",
+      "totalFindings": 78,
+      "acceptedFindings": 61,
+      "dismissedFindings": 12,
+      "deferredFindings": 5,
+      "precisionRate": 0.82
+    },
+    "TestQuality": {
+      "agentName": "TestQuality",
+      "totalFindings": 54,
+      "acceptedFindings": 38,
+      "dismissedFindings": 10,
+      "deferredFindings": 6,
+      "precisionRate": 0.79
+    },
+    "Security": {
+      "agentName": "Security",
+      "totalFindings": 31,
+      "acceptedFindings": 27,
+      "dismissedFindings": 3,
+      "deferredFindings": 1,
+      "precisionRate": 0.9
+    },
+    "Complexity": {
+      "agentName": "Complexity",
+      "totalFindings": 45,
+      "acceptedFindings": 29,
+      "dismissedFindings": 14,
+      "deferredFindings": 2,
+      "precisionRate": 0.67
+    },
+    "Priority": {
+      "agentName": "Priority",
+      "totalFindings": 26,
+      "acceptedFindings": 19,
+      "dismissedFindings": 5,
+      "deferredFindings": 2,
+      "precisionRate": 0.79
+    }
+  },
+  "activeHeuristics": [
+    {
+      "id": 1,
+      "agentName": "Complexity",
+      "heuristicType": "PATH_OVERRIDE",
+      "description": "Skip complexity checks for test files — they consistently produce false positives",
+      "evidence": "72% dismissal rate for complexity findings in **/*.test.* files (18 of 25 dismissed)",
+      "status": "APPROVED",
+      "learningVersion": 2
+    },
+    {
+      "id": 2,
+      "agentName": "CodeQuality",
+      "heuristicType": "SKIP_CATEGORY",
+      "description": "Do not flag missing JSDoc comments — team convention does not require them",
+      "evidence": "100% dismissal rate for JSDoc-related findings (8 of 8 dismissed)",
+      "status": "APPROVED",
+      "learningVersion": 2
+    }
+  ],
+  "activePromptPatches": [
+    {
+      "id": 1,
+      "agentName": "TestQuality",
+      "patchType": "ADD_INSTRUCTION",
+      "description": "Treat Playwright E2E tests as sufficient coverage for UI components",
+      "evidence": "Reviewers consistently dismissed findings asking for unit tests when E2E tests were present",
+      "status": "APPROVED",
+      "learningVersion": 3
+    }
+  ],
+  "activeCalibrations": [
+    {
+      "id": 1,
+      "agentName": "Complexity",
+      "category": "function-length",
+      "originalLevel": "HIGH",
+      "calibratedLevel": "MEDIUM",
+      "confidence": 0.78,
+      "sampleSize": 14,
+      "status": "APPROVED",
+      "learningVersion": 3
+    }
+  ]
+}
