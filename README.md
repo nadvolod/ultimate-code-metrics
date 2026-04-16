@@ -128,7 +128,7 @@ This compiles all modules and runs tests.
 
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
-export OPENAI_MODEL="gpt-4o-mini"  # Optional, defaults to gpt-4o-mini
+export OPENAI_MODEL="gpt-5.4-mini"  # Optional, defaults to gpt-5.4-mini
 ```
 
 ### 4. Run a PR Review
@@ -224,7 +224,7 @@ The `RunReview` CLI uses these exit codes:
 ## Environment Variables
 
 - `OPENAI_API_KEY` - **Required** - Your OpenAI API key
-- `OPENAI_MODEL` - Optional - Model to use (default: `gpt-4o-mini`)
+- `OPENAI_MODEL` - Optional - Model to use (default: `gpt-5.4-mini`)
 - `OPENAI_BASE_URL` - Optional - OpenAI API base URL (default: https://api.openai.com/v1/chat/completions)
 - `DUMMY_MODE` - Optional - Set to `true` to use canned responses without API calls (default: `false`)
 
@@ -283,7 +283,7 @@ The `RunReview` CLI uses these exit codes:
   "metadata": {
     "generatedAt": "2026-01-11T10:30:00Z",
     "tookMs": 8432,
-    "model": "gpt-4o-mini"
+    "model": "gpt-5.4-mini"
   }
 }
 ```

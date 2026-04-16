@@ -2,6 +2,7 @@ package com.utm.temporal.llm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.utm.temporal.config.AppConfig;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ public class OpenAiLlmClient implements LlmClient {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAiLlmClient.class);
 
-    public static final String DEFAULT_MODEL = "gpt-4o-mini";
+    public static final String DEFAULT_MODEL = AppConfig.DEFAULT_OPENAI_MODEL;
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
