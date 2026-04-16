@@ -31,7 +31,7 @@ class AppConfigTest {
     void defaults_areCorrect() {
         assertEquals("localhost:7233", AppConfig.DEFAULT_TEMPORAL_ADDRESS);
         assertEquals("pr-review", AppConfig.DEFAULT_TASK_QUEUE);
-        assertEquals("gpt-4o-mini", AppConfig.DEFAULT_OPENAI_MODEL);
+        assertEquals("gpt-5.4-mini", AppConfig.DEFAULT_OPENAI_MODEL);
         assertEquals(60, AppConfig.DEFAULT_ACTIVITY_TIMEOUT_SECONDS);
         assertEquals(5, AppConfig.DEFAULT_RETRY_INTERVAL_SECONDS);
     }

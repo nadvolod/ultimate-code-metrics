@@ -57,7 +57,7 @@ WorkerApp (CLI entry point)
 ### Technology Stack
 - **Backend**: Java 11+, Maven, Temporal SDK 1.34.0, OkHttp, Jackson
 - **Frontend**: Next.js 16, React 19, TypeScript 5 (strict), Tailwind CSS 4, Radix UI, Recharts
-- **LLM**: OpenAI API (gpt-4o-mini default)
+- **LLM**: OpenAI API (gpt-5.4-mini default)
 
 ## Key Files
 
@@ -75,7 +75,7 @@ Required:
 - `OPENAI_API_KEY` - OpenAI API key
 
 Optional:
-- `OPENAI_MODEL` - LLM model (default: gpt-4o-mini)
+- `OPENAI_MODEL` - LLM model (default: gpt-5.4-mini)
 - `DUMMY_MODE=true` - Use canned responses without API calls
 
 ## Conventions

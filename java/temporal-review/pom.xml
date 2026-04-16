@@ -95,6 +95,18 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven Surefire Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <!-- Enable dummy mode so tests run without a real OpenAI API key -->
+                        <DUMMY_MODE>true</DUMMY_MODE>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+
             <!-- Exec Maven Plugin for running RunReview -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

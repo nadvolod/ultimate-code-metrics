@@ -133,7 +133,7 @@ CLI → Temporal Client → Workflow → Activities → Agents → LLM → Resul
 - `OPENAI_API_KEY`: OpenAI API key for LLM calls
 
 ### Optional
-- `OPENAI_MODEL`: Model to use (default: `gpt-4o-mini`)
+- `OPENAI_MODEL`: Model to use (default defined in `AppConfig.DEFAULT_OPENAI_MODEL`)
 - `OPENAI_BASE_URL`: OpenAI API base URL
 - `DUMMY_MODE`: Set to `true` to use canned responses for testing
 
