@@ -21,6 +21,11 @@
     "recommendation" : "APPROVE",
     "findings" : [ "Cyclomatic Complexity: 6", "Cognitive Complexity: 8", "Primary driver: simple conditional checks" ]
   }, {
+    "agentName" : "Impact Analysis",
+    "riskLevel" : "MEDIUM",
+    "recommendation" : "REQUEST_CHANGES",
+    "findings" : [ "[Direct] AuthService.java modified — login() and verifyToken() methods changed", "[Indirect] Any controller or middleware calling AuthService.login() or AuthService.verifyToken() may be affected — verify all authentication entry points", "[Test Gap] No integration tests visible for token verification flow with downstream services that depend on JWT claims", "[QA Focus] End-to-end login flow should be regression-tested, including token expiry and invalid token scenarios across all client types" ]
+  }, {
     "agentName" : "Priority",
     "riskLevel" : "MEDIUM",
     "recommendation" : "REQUEST_CHANGES",
